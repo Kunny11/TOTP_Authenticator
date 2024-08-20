@@ -1,12 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     package="com.authenticator.totp">
 
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-feature android:name="android.hardware.camera" android:required="true" />
+
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="true" />
+
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
 
@@ -21,29 +26,36 @@
         android:theme="@style/Theme.Totp"
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
-
+        <activity
+            android:name=".Biometrics"
+            android:exported="false" />
         <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <activity android:name=".ManualPage"
+        <activity
+            android:name=".ManualPage"
             android:parentActivityName=".HomePage" />
-        <activity android:name=".QRCodePage"
+        <activity
+            android:name=".QRCodePage"
             android:parentActivityName=".HomePage" />
-        <activity android:name=".ImportPage"
-            android:parentActivityName=".HomePage"/>
-        <activity android:name=".ExportPage"
+        <activity
+            android:name=".ImportPage"
             android:parentActivityName=".HomePage" />
-        <activity android:name=".HomePage"/>
+        <activity
+            android:name=".ExportPage"
+            android:parentActivityName=".HomePage" />
+        <activity android:name=".HomePage" />
         <activity android:name=".RegisterPage" />
-        <activity android:name=".SettingsActivity"
+        <activity
+            android:name=".SettingsActivity"
             android:parentActivityName=".HomePage" />
         <activity android:name=".TransferPage" />
-
     </application>
+
 </manifest>
