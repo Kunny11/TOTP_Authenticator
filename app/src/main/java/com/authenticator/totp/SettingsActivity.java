@@ -42,5 +42,15 @@ public class SettingsActivity extends AppCompatActivity {
                 startActivity(transferIntent);
             }
         });
+
+        // Enable/Disable Biometrics
+        LinearLayout bio = findViewById(R.id.bio);
+        bio.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent transferIntent = new Intent(SettingsActivity.this, Biometrics.class);
+                startActivity(transferIntent);
+            }
+        });
     }
 }

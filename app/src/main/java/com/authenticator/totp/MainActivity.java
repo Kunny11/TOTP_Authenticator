@@ -1,6 +1,7 @@
 package com.authenticator.totp;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -25,6 +26,8 @@ public class MainActivity extends AppCompatActivity {
     private TextView biometrics;
     private UserDatabaseHelper db;
     private BiometricPrompt biometricPrompt;
+    private static final String PREFS_NAME = "biometric_prefs";
+    private static final String BIOMETRICS_ENABLED_KEY = "biometrics_enabled";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,6 +41,15 @@ public class MainActivity extends AppCompatActivity {
         db = new UserDatabaseHelper(this);
 
         db.logDatabaseContent();
+
+        SharedPreferences preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        boolean isBiometricsEnabled = preferences.getBoolean(BIOMETRICS_ENABLED_KEY, true);
+
+        if (isBiometricsEnabled) {
+            setupBiometricLogin();
+        } else {
+            biometrics.setVisibility(View.GONE);
+        }
 
         btnLogin.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -67,7 +79,9 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+    }
 
+    private void setupBiometricLogin() {
         Executor executor = ContextCompat.getMainExecutor(this);
         biometricPrompt = new BiometricPrompt(MainActivity.this, executor, new BiometricPrompt.AuthenticationCallback() {
             @Override
