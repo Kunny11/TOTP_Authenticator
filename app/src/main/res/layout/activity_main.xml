@@ -22,7 +22,15 @@
         android:id="@+id/tvRegister"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Create one"
+        android:text="Register Password"
+        android:textColor="@android:color/holo_blue_light"
+        android:paddingTop="16dp"/>
+
+    <TextView
+        android:id="@+id/biometrics"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Use Biometrics"
         android:textColor="@android:color/holo_blue_light"
         android:paddingTop="16dp"/>
 </LinearLayout>
