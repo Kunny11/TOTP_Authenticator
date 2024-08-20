@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package com.google.authenticator.migration;
+
+option java_package = "com.google.authenticator.migration";
+option java_outer_classname = "MigrationPayloadWrapper";
+
+message MigrationPayload {
+  repeated OTPParameters otp_parameters = 1;
+
+  message OTPParameters {
+    string issuer = 1;
+    string account_name = 2;
+    bytes secret = 3;
+    DigitCount digits = 4;
+    Algorithm algorithm = 5;
+
+    enum DigitCount {
+      DIGIT_COUNT_UNSPECIFIED = 0;
+      DIGIT_COUNT_SIX = 1;
+      DIGIT_COUNT_EIGHT = 2;
+    }
+
+    enum Algorithm {
+      ALGORITHM_UNSPECIFIED = 0;
+      ALGORITHM_SHA1 = 1;
+      ALGORITHM_SHA256 = 2;
+      ALGORITHM_SHA512 = 3;
+    }
+  }
+}

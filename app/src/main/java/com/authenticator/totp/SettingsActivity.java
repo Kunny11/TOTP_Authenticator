@@ -1,9 +1,8 @@
 package com.authenticator.totp;
-
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.Button;
+import android.widget.LinearLayout;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -14,10 +13,9 @@ public class SettingsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.settings);
 
-        Button importButton = findViewById(R.id.import_button);
-        Button exportButton = findViewById(R.id.export_button);
-
-        importButton.setOnClickListener(new View.OnClickListener() {
+        // Import Page
+        LinearLayout impPage = findViewById(R.id.imp_page);
+        impPage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent importIntent = new Intent(SettingsActivity.this, ImportPage.class);
@@ -25,11 +23,23 @@ public class SettingsActivity extends AppCompatActivity {
             }
         });
 
-        exportButton.setOnClickListener(new View.OnClickListener() {
+        // Export Page
+        LinearLayout expPage = findViewById(R.id.exp_page);
+        expPage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent exportIntent = new Intent(SettingsActivity.this, ExportPage.class);
                 startActivity(exportIntent);
+            }
+        });
+
+        // Transfer with Qr code
+        LinearLayout expQr = findViewById(R.id.qr_exp);
+        expQr.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent transferIntent = new Intent(SettingsActivity.this, TransferPage.class);
+                startActivity(transferIntent);
             }
         });
     }

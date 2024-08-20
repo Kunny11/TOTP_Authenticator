@@ -42,7 +42,7 @@
         <activity android:name=".RegisterPage" />
         <activity android:name=".SettingsActivity"
             android:parentActivityName=".HomePage" />
-
+        <activity android:name=".TransferPage" />
 
     </application>
 </manifest>

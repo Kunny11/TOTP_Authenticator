@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -97,6 +98,8 @@ public class ExportPage extends AppCompatActivity {
             return;
         }
 
+        //Log.d("checking","details" + otpInfoList);
+
         Gson gson = new Gson();
         String content = "";
         switch (format) {
@@ -184,6 +187,7 @@ public class ExportPage extends AppCompatActivity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == REQUEST_WRITE_STORAGE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 showFormatSelectionDialog();
@@ -201,16 +205,31 @@ public class ExportPage extends AppCompatActivity {
         try {
             BitMatrix bitMatrix = qrCodeWriter.encode(qrContent, BarcodeFormat.QR_CODE, 200, 200);
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            for (int y = 0; y < bitMatrix.getHeight(); y++) {
-                for (int x = 0; x < bitMatrix.getWidth(); x++) {
-                    byteArrayOutputStream.write(bitMatrix.get(x, y) ? 0 : 1);
+            int width = bitMatrix.getWidth();
+            int height = bitMatrix.getHeight();
+            int[] pixels = new int[width * height];
+
+            // Converting BitMatrix to pixels array
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    pixels[y * width + x] = bitMatrix.get(x, y) ? 0xFF000000 : 0xFFFFFFFF;
                 }
             }
-            return "data:image/png;base64," + android.util.Base64.encodeToString(byteArrayOutputStream.toByteArray(), android.util.Base64.DEFAULT);
+
+            // Creating a Bitmap from pixels array
+            Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            bitmap.setPixels(pixels, 0, width, 0, 0, width, height);
+
+            // Converting Bitmap to PNG
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
+
+            // Encode PNG to base64
+            return "data:image/png;base64," + android.util.Base64.encodeToString(byteArrayOutputStream.toByteArray(), android.util.Base64.NO_WRAP);
         } catch (WriterException e) {
             Log.e(TAG, "Error generating QR code: " + e.getMessage(), e);
             return "";
         }
     }
+
 
 }
