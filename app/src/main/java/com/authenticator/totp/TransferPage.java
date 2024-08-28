@@ -116,11 +116,11 @@ public class TransferPage extends AppCompatActivity {
         try {
             MigrationPayload payload = MigrationPayload.parseFrom(decodedPayload);
             for (MigrationPayload.OTPParameters otp : payload.getOtpParametersList()) {
-                Log.d("iss","Issuer: " + otp.getIssuer());
-                Log.d("nam","Account Name: " + otp.getAccountName());
+                Log.d("issue","Issuer: " + otp.getIssuer());
+                Log.d("accnam","Account Name: " + otp.getAccountName());
                 Log.d("see","Secret: " + otp.getSecret().toStringUtf8());
-                Log.d("alggg","Algorithm: " + otp.getAlgorithm());
-                Log.d("diii","Digits: " + otp.getDigits());
+                Log.d("algg","Algorithm: " + otp.getAlgorithm());
+                Log.d("dii","Digits: " + otp.getDigits());
             }
         } catch (Exception e) {
             e.printStackTrace();
