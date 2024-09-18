@@ -69,15 +69,27 @@ public class UserDatabaseHelper extends SQLiteOpenHelper {
     }
 
     public void logDatabaseContent() {
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.query(TABLE_NAME, null, null, null, null, null, null);
-        if (cursor.moveToFirst()) {
-            do {
-                int id = cursor.getInt(cursor.getColumnIndex(COLUMN_ID));
-                String password = cursor.getString(cursor.getColumnIndex(COLUMN_PASSWORD));
-                Log.d("DatabaseHelper", "ID: " + id + ", Password: " + password);
-            } while (cursor.moveToNext());
+        try (SQLiteDatabase db = this.getReadableDatabase();
+             Cursor cursor = db.query(TABLE_NAME, null, null, null, null, null, null)) {
+
+            if (cursor.moveToFirst()) {
+                do {
+                    int idIndex = cursor.getColumnIndex(COLUMN_ID);
+                    int passwordIndex = cursor.getColumnIndex(COLUMN_PASSWORD);
+
+                    if (idIndex != -1 && passwordIndex != -1) {
+                        int id = cursor.getInt(idIndex);
+                        String password = cursor.getString(passwordIndex);
+                        Log.d("DatabaseHelper", "ID: " + id + ", Password: " + password);
+                    } else {
+                        Log.e("DatabaseHelper", "Column not found: " +
+                                (idIndex == -1 ? COLUMN_ID : COLUMN_PASSWORD));
+                    }
+                } while (cursor.moveToNext());
+            }
+        } catch (Exception e) {
+            Log.e("DatabaseHelper", "Error logging database content", e);
         }
-        cursor.close();
     }
+
 }

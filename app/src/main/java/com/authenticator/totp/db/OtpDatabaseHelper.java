@@ -1,10 +1,13 @@
 package com.authenticator.totp.db;
 
+import static android.content.ContentValues.TAG;
+
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.content.ContentValues;
+import android.util.Log;
 
 import com.authenticator.totp.OtpInfo;
 
@@ -22,7 +25,6 @@ public class OtpDatabaseHelper extends SQLiteOpenHelper {
     private static final String COLUMN_ISSUER = "issuer";
     private static final String COLUMN_SECRET = "secret";
 
-    //private static final String COLUMN_IS_MANUAL = "is_manual";
     private static final String COLUMN_OTP_LENGTH = "otp_length";
     private static final String COLUMN_USER_TIME_STEP = "user_time_step";
     private static final String COLUMN_ALGORITHM = "algorithm";
@@ -62,7 +64,6 @@ public class OtpDatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_ACCOUNT_NAME, otpInfo.accountName);
         values.put(COLUMN_ISSUER, otpInfo.issuer);
         values.put(COLUMN_SECRET, otpInfo.secret);
-        //values.put(COLUMN_IS_MANUAL, otpInfo.isManual ? 1 : 0);
         values.put(COLUMN_OTP_LENGTH, otpInfo.otpLength);
         values.put(COLUMN_USER_TIME_STEP, otpInfo.userTimeStep);
         values.put(COLUMN_ALGORITHM, otpInfo.algorithm);
@@ -75,27 +76,36 @@ public class OtpDatabaseHelper extends SQLiteOpenHelper {
         List<OtpInfo> otpInfoList = new ArrayList<>();
         String selectQuery = "SELECT * FROM " + TABLE_NAME;
 
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery(selectQuery, null);
+        try (SQLiteDatabase db = this.getReadableDatabase();
+             Cursor cursor = db.rawQuery(selectQuery, null)) {
 
-        if (cursor.moveToFirst()) {
-            do {
-                OtpInfo otpInfo = new OtpInfo();
-                otpInfo.setId(cursor.getInt(cursor.getColumnIndex(COLUMN_ID)));
-                otpInfo.setAccountName(cursor.getString(cursor.getColumnIndex(COLUMN_ACCOUNT_NAME)));
-                otpInfo.setIssuer(cursor.getString(cursor.getColumnIndex(COLUMN_ISSUER)));
-                otpInfo.setSecret(cursor.getString(cursor.getColumnIndex(COLUMN_SECRET)));
-                //otpInfo.setIsManual(cursor.getInt(cursor.getColumnIndex(COLUMN_IS_MANUAL)) == 1);
-                otpInfo.setOtpLength(cursor.getInt(cursor.getColumnIndex(COLUMN_OTP_LENGTH)));
-                otpInfo.setUserTimeStep(cursor.getInt(cursor.getColumnIndex(COLUMN_USER_TIME_STEP)));
-                otpInfo.setAlgorithm(cursor.getString(cursor.getColumnIndex(COLUMN_ALGORITHM)));
+            if (cursor.moveToFirst()) {
+                do {
+                    OtpInfo otpInfo = new OtpInfo();
 
-                otpInfoList.add(otpInfo);
-            } while (cursor.moveToNext());
+                    int idIndex = cursor.getColumnIndex(COLUMN_ID);
+                    int accountNameIndex = cursor.getColumnIndex(COLUMN_ACCOUNT_NAME);
+                    int issuerIndex = cursor.getColumnIndex(COLUMN_ISSUER);
+                    int secretIndex = cursor.getColumnIndex(COLUMN_SECRET);
+                    int otpLengthIndex = cursor.getColumnIndex(COLUMN_OTP_LENGTH);
+                    int userTimeStepIndex = cursor.getColumnIndex(COLUMN_USER_TIME_STEP);
+                    int algorithmIndex = cursor.getColumnIndex(COLUMN_ALGORITHM);
+
+                    if (idIndex != -1) otpInfo.setId(cursor.getInt(idIndex));
+                    if (accountNameIndex != -1) otpInfo.setAccountName(cursor.getString(accountNameIndex));
+                    if (issuerIndex != -1) otpInfo.setIssuer(cursor.getString(issuerIndex));
+                    if (secretIndex != -1) otpInfo.setSecret(cursor.getString(secretIndex));
+                    if (otpLengthIndex != -1) otpInfo.setOtpLength(cursor.getInt(otpLengthIndex));
+                    if (userTimeStepIndex != -1) otpInfo.setUserTimeStep(cursor.getInt(userTimeStepIndex));
+                    if (algorithmIndex != -1) otpInfo.setAlgorithm(cursor.getString(algorithmIndex));
+
+                    otpInfoList.add(otpInfo);
+                } while (cursor.moveToNext());
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error fetching OTP info: ", e);
         }
 
-        cursor.close();
-        db.close();
         return otpInfoList;
     }
 
@@ -105,7 +115,6 @@ public class OtpDatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_ACCOUNT_NAME, otpInfo.accountName);
         values.put(COLUMN_ISSUER, otpInfo.issuer);
         values.put(COLUMN_SECRET, otpInfo.secret);
-        //values.put(COLUMN_IS_MANUAL, otpInfo.isManual ? 1 : 0);
         values.put(COLUMN_OTP_LENGTH, otpInfo.otpLength);
         values.put(COLUMN_USER_TIME_STEP, otpInfo.userTimeStep);
         values.put(COLUMN_ALGORITHM, otpInfo.algorithm);
