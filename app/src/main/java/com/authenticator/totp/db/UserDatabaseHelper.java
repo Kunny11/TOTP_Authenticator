@@ -10,7 +10,7 @@ import android.util.Log;
 public class UserDatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "user.db";
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 3;
     private static final String TABLE_NAME = "user";
     private static final String COLUMN_ID = "id";
     private static final String COLUMN_PASSWORD = "password";
@@ -46,6 +46,16 @@ public class UserDatabaseHelper extends SQLiteOpenHelper {
         return true;
     }
 
+    public boolean updatePassword(String newPassword) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_PASSWORD, newPassword);
+
+        int rowsAffected = db.update(TABLE_NAME, values, null, null);
+        db.close();
+        return rowsAffected > 0;
+    }
+
     public boolean isPasswordRegistered() {
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.query(TABLE_NAME, new String[]{COLUMN_PASSWORD},
@@ -55,17 +65,29 @@ public class UserDatabaseHelper extends SQLiteOpenHelper {
         return hasPassword;
     }
 
+    public boolean verifyPassword(String password) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(TABLE_NAME, new String[]{COLUMN_PASSWORD},
+                null, null, null, null, null);
+        boolean isValid = false;
+        if (cursor.moveToFirst()) {
+            String storedPassword = cursor.getString(0);
+            isValid = storedPassword.equals(password);
+        }
+        cursor.close();
+        return isValid;
+    }
+
     public String getPassword() {
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.query(TABLE_NAME, new String[]{COLUMN_PASSWORD},
                 null, null, null, null, null);
+        String password = null;
         if (cursor != null && cursor.moveToFirst()) {
-            String password = cursor.getString(0);
-            cursor.close();
-            return password;
-        } else {
-            return null;
+            password = cursor.getString(0);
         }
+        cursor.close();
+        return password;
     }
 
     public void logDatabaseContent() {
@@ -91,5 +113,4 @@ public class UserDatabaseHelper extends SQLiteOpenHelper {
             Log.e("DatabaseHelper", "Error logging database content", e);
         }
     }
-
 }

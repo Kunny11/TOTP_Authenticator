@@ -8,8 +8,6 @@ public class OtpInfo {
 
     public String issuer;
     public String secret;
-
-    //public boolean isManual;
     public int otpLength;
     public int userTimeStep;
     public String algorithm;
@@ -22,7 +20,6 @@ public class OtpInfo {
         this.accountName = accountName;
         this.issuer = issuer;
         this.secret = secret;
-       // this.isManual = isManual;
         this.otpLength = otpLength;
         this.userTimeStep = userTimeStep;
         this.algorithm = algorithm;
@@ -59,14 +56,6 @@ public class OtpInfo {
     public void setSecret(String secret) {
         this.secret = secret;
     }
-
-    /*public boolean isManual() {
-        return isManual;
-    }
-
-    public void setIsManual(boolean isManual) {
-        this.isManual = isManual;
-    }*/
 
     public int getOtpLength() {
         return otpLength;

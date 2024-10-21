@@ -17,7 +17,7 @@ import java.util.List;
 public class OtpDatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "otp.db";
-    private static final int DATABASE_VERSION = 2;
+    private static final int DATABASE_VERSION = 6;
 
     private static final String TABLE_NAME = "otp_accounts";
     private static final String COLUMN_ID = "_id";
@@ -49,10 +49,8 @@ public class OtpDatabaseHelper extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        if (oldVersion < 2) {
-            // Drop older table if existed
+        if (oldVersion < 6) {
             db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME);
-            // Create tables again
             onCreate(db);
         }
     }
@@ -61,15 +59,31 @@ public class OtpDatabaseHelper extends SQLiteOpenHelper {
     public void addOtpInfo(OtpInfo otpInfo) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
-        values.put(COLUMN_ACCOUNT_NAME, otpInfo.accountName);
-        values.put(COLUMN_ISSUER, otpInfo.issuer);
-        values.put(COLUMN_SECRET, otpInfo.secret);
-        values.put(COLUMN_OTP_LENGTH, otpInfo.otpLength);
-        values.put(COLUMN_USER_TIME_STEP, otpInfo.userTimeStep);
-        values.put(COLUMN_ALGORITHM, otpInfo.algorithm);
 
-        db.insert(TABLE_NAME, null, values);
-        db.close();
+        try {
+            //Encrypting sensitive information
+            String encryptedAccountName = Hashing.encrypt(otpInfo.accountName);
+            String encryptedIssuer = Hashing.encrypt(otpInfo.issuer);
+            String encryptedSecret = Hashing.encrypt(otpInfo.secret);
+
+            values.put(COLUMN_ACCOUNT_NAME, encryptedAccountName);
+            values.put(COLUMN_ISSUER, encryptedIssuer);
+            values.put(COLUMN_SECRET, encryptedSecret);
+            values.put(COLUMN_OTP_LENGTH, otpInfo.otpLength);
+            values.put(COLUMN_USER_TIME_STEP, otpInfo.userTimeStep);
+            values.put(COLUMN_ALGORITHM, otpInfo.algorithm);
+
+            long result = db.insert(TABLE_NAME, null, values);
+            if (result == -1) {
+                Log.e("failed", "Failed to insert OTP info");
+            } else {
+                Log.d("inserted", "Inserted OTP info with id: " + result);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error encrypting OTP info: ", e);
+        } finally {
+            db.close();
+        }
     }
 
     public List<OtpInfo> getAllOtpInfo() {
@@ -92,12 +106,17 @@ public class OtpDatabaseHelper extends SQLiteOpenHelper {
                     int algorithmIndex = cursor.getColumnIndex(COLUMN_ALGORITHM);
 
                     if (idIndex != -1) otpInfo.setId(cursor.getInt(idIndex));
-                    if (accountNameIndex != -1) otpInfo.setAccountName(cursor.getString(accountNameIndex));
-                    if (issuerIndex != -1) otpInfo.setIssuer(cursor.getString(issuerIndex));
-                    if (secretIndex != -1) otpInfo.setSecret(cursor.getString(secretIndex));
+                    if (accountNameIndex != -1)
+                        otpInfo.setAccountName(Hashing.decrypt(cursor.getString(accountNameIndex)));
+                    if (issuerIndex != -1)
+                        otpInfo.setIssuer(Hashing.decrypt(cursor.getString(issuerIndex)));
+                    if (secretIndex != -1)
+                        otpInfo.setSecret(Hashing.decrypt(cursor.getString(secretIndex)));
                     if (otpLengthIndex != -1) otpInfo.setOtpLength(cursor.getInt(otpLengthIndex));
-                    if (userTimeStepIndex != -1) otpInfo.setUserTimeStep(cursor.getInt(userTimeStepIndex));
-                    if (algorithmIndex != -1) otpInfo.setAlgorithm(cursor.getString(algorithmIndex));
+                    if (userTimeStepIndex != -1)
+                        otpInfo.setUserTimeStep(cursor.getInt(userTimeStepIndex));
+                    if (algorithmIndex != -1)
+                        otpInfo.setAlgorithm(cursor.getString(algorithmIndex));
 
                     otpInfoList.add(otpInfo);
                 } while (cursor.moveToNext());

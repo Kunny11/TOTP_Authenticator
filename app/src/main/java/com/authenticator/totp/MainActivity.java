@@ -14,6 +14,7 @@ import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
 
+import com.authenticator.totp.db.Hashing;
 import com.authenticator.totp.db.UserDatabaseHelper;
 
 import java.util.concurrent.Executor;
@@ -28,6 +29,8 @@ public class MainActivity extends AppCompatActivity {
     private BiometricPrompt biometricPrompt;
     private static final String PREFS_NAME = "biometric_prefs";
     private static final String BIOMETRICS_ENABLED_KEY = "biometrics_enabled";
+    private static final String PREFS_ENCRYPTION_KEY = "encryption_prefs";
+    private static final String KEY_GENERATED = "key_generated";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,6 +45,23 @@ public class MainActivity extends AppCompatActivity {
 
         db.logDatabaseContent();
 
+        //Initialises the encryption key once during app launch
+        SharedPreferences encryptionPrefs = getSharedPreferences(PREFS_ENCRYPTION_KEY, MODE_PRIVATE);
+        boolean isKeyGenerated = encryptionPrefs.getBoolean(KEY_GENERATED, false);
+
+        if (!isKeyGenerated) {
+            try {
+                Hashing.generateKey();
+                SharedPreferences.Editor editor = encryptionPrefs.edit();
+                editor.putBoolean(KEY_GENERATED, true);
+                editor.apply();
+            } catch (Exception e) {
+                e.printStackTrace();
+                Toast.makeText(this, "Error generating encryption key", Toast.LENGTH_SHORT).show();
+            }
+        }
+
+
         SharedPreferences preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         boolean isBiometricsEnabled = preferences.getBoolean(BIOMETRICS_ENABLED_KEY, true);
 
@@ -54,24 +74,26 @@ public class MainActivity extends AppCompatActivity {
         btnLogin.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String enteredPassword = etPassword.getText().toString();
-                String storedPassword = db.getPassword();
-
-                if (storedPassword != null && storedPassword.equals(enteredPassword)) {
-                    Toast.makeText(MainActivity.this, "Login successful!", Toast.LENGTH_SHORT).show();
-                    Intent intent = new Intent(MainActivity.this, HomePage.class);
-                    startActivity(intent);
+                String enteredPassword = etPassword.getText().toString().trim();
+                if (enteredPassword.isEmpty()) {
+                    Toast.makeText(MainActivity.this, "Please enter your password", Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(MainActivity.this, "Incorrect password", Toast.LENGTH_SHORT).show();
+                    if (db.verifyPassword(enteredPassword)) {
+                        Toast.makeText(MainActivity.this, "Login successful!", Toast.LENGTH_SHORT).show();
+                        Intent intent = new Intent(MainActivity.this, HomePage.class);
+                        startActivity(intent);
+                    } else {
+                        Toast.makeText(MainActivity.this, "Incorrect password", Toast.LENGTH_SHORT).show();
+                    }
                 }
             }
         });
 
+
         tvRegister.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String storedPassword = db.getPassword();
-                if (storedPassword == null || storedPassword.isEmpty()) {
+                if (!db.isPasswordRegistered()) {
                     Intent intent = new Intent(MainActivity.this, RegisterPage.class);
                     startActivity(intent);
                 } else {
@@ -79,6 +101,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+
     }
 
     private void setupBiometricLogin() {

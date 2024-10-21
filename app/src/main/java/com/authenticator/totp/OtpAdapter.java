@@ -1,5 +1,6 @@
 package com.authenticator.totp;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -40,6 +41,9 @@ public class OtpAdapter extends RecyclerView.Adapter<OtpAdapter.ViewHolder> {
         holder.accountNameTextView.setText(otpInfo.getAccountName());
         holder.issuerTextView.setText(otpInfo.getIssuer());
         holder.otpTextView.setText(otpInfo.getGeneratedOTP());
+
+        Log.d("Adapter", "Binding data - Account Name: " + otpInfo.getAccountName() +
+                ", Issuer: " + otpInfo.getIssuer() + ", OTP: " + otpInfo.getGeneratedOTP());
     }
 
     @Override

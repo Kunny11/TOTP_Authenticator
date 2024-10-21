@@ -10,9 +10,13 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -23,10 +27,8 @@ import androidx.core.content.ContextCompat;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-
 import com.authenticator.totp.db.OtpDatabaseHelper;
+import com.google.gson.Gson;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
@@ -37,7 +39,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.reflect.Type;
 import java.util.List;
 
 public class ExportPage extends AppCompatActivity {
@@ -45,6 +46,7 @@ public class ExportPage extends AppCompatActivity {
     private static final String TAG = "ExportPage";
     private static final int REQUEST_WRITE_STORAGE = 112;
     private OtpDatabaseHelper otpDatabaseHelper;
+    private boolean shouldEncrypt = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,36 +72,78 @@ public class ExportPage extends AppCompatActivity {
     private void showFormatSelectionDialog() {
         final String[] formats = {"TXT", "JSON", "HTML"};
 
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+
+        final CheckBox encryptCheckbox = new CheckBox(this);
+        encryptCheckbox.setText("Encrypt file");
+
+        layout.addView(encryptCheckbox);
+
         new AlertDialog.Builder(this)
                 .setTitle("Choose file format")
-                .setItems(formats, new DialogInterface.OnClickListener() {
+                .setSingleChoiceItems(formats, -1, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        switch (which) {
-                            case 0:
-                                generateAndSaveFile("txt");
-                                break;
-                            case 1:
-                                generateAndSaveFile("json");
-                                break;
-                            case 2:
-                                generateAndSaveFile("html");
-                                break;
+                    }
+                })
+                .setView(layout)
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        int selectedPosition = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
+                        if (selectedPosition >= 0) {
+                            shouldEncrypt = encryptCheckbox.isChecked();
+                            String selectedFormat = formats[selectedPosition];
+                            if (shouldEncrypt) {
+                                showPasswordDialog(selectedFormat);
+                            } else {
+                                generateAndSaveFile(selectedFormat.toLowerCase(), null);
+                            }
+                        } else {
+                            Toast.makeText(ExportPage.this, "Please select a format", Toast.LENGTH_SHORT).show();
                         }
                     }
                 })
+                .setNegativeButton("Cancel", null)
                 .show();
     }
 
-    private void generateAndSaveFile(String format) {
-        // Retrieve OTP info from the database
+    private void showPasswordDialog(final String format) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Enter password");
+
+        final EditText input = new EditText(this);
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        builder.setView(input);
+
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                String password = input.getText().toString();
+                if (!password.isEmpty()) {
+                    generateAndSaveFile(format.toLowerCase(), password);
+                } else {
+                    Toast.makeText(ExportPage.this, "Password cannot be empty", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+
+        builder.show();
+    }
+
+    private void generateAndSaveFile(String format, String password) {
         List<OtpInfo> otpInfoList = otpDatabaseHelper.getAllOtpInfo();
         if (otpInfoList == null || otpInfoList.isEmpty()) {
             Toast.makeText(this, "No OTP details to export", Toast.LENGTH_SHORT).show();
             return;
         }
-
-        //Log.d("checking","details" + otpInfoList);
 
         Gson gson = new Gson();
         String content = "";
@@ -116,6 +160,17 @@ public class ExportPage extends AppCompatActivity {
 
             case "json":
                 content = gson.toJson(otpInfoList);
+                if (shouldEncrypt) {
+                    try {
+                        PassEncryp passEncryp = new PassEncryp();
+                        content = Base64.encodeToString(passEncryp.encryptContent(content, password), Base64.DEFAULT); // Encrypt the JSON content
+
+                    } catch (Exception e) {
+                        Log.e(TAG, "Encryption failed: " + e.getMessage(), e);
+                        Toast.makeText(this, "Error encrypting file", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                }
                 break;
 
             case "html":
@@ -185,6 +240,7 @@ public class ExportPage extends AppCompatActivity {
                 return "text/plain";
         }
     }
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {

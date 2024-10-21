@@ -415,7 +415,6 @@ public class HomePage extends AppCompatActivity {
             }
         }
 
-        // If there are no duplicates, adds a new OTP info
         OtpInfo otpInfo = new OtpInfo(accountName, issuer, secret, otpLength, userTimeStep, algorithm);
         otpInfo.setGeneratedOTP(generatedOTP);
         otpInfoList.add(otpInfo);

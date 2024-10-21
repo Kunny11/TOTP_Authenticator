@@ -13,6 +13,16 @@ public class SettingsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.settings);
 
+
+        LinearLayout chgpass = findViewById(R.id.chg_pass);
+        chgpass.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent importIntent = new Intent(SettingsActivity.this, ChangePassword.class);
+                startActivity(importIntent);
+            }
+        });
+
         // Import Page
         LinearLayout impPage = findViewById(R.id.imp_page);
         impPage.setOnClickListener(new View.OnClickListener() {
@@ -48,8 +58,18 @@ public class SettingsActivity extends AppCompatActivity {
         bio.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent transferIntent = new Intent(SettingsActivity.this, Biometrics.class);
-                startActivity(transferIntent);
+                Intent bioIntent = new Intent(SettingsActivity.this, Biometrics.class);
+                startActivity(bioIntent);
+            }
+        });
+
+        // Backup
+        LinearLayout backup = findViewById(R.id.backup);
+        backup.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent backupIntent = new Intent(SettingsActivity.this, BackUp.class);
+                startActivity(backupIntent);
             }
         });
     }

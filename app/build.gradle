@@ -77,5 +77,8 @@ dependencies {
     implementation 'com.google.protobuf:protobuf-javalite:4.27.3'
 
     implementation 'commons-codec:commons-codec:1.15'
+
+    implementation 'org.mindrot:jbcrypt:0.4'
+
 }
 
