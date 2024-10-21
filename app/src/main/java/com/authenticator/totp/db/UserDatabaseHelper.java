@@ -7,10 +7,12 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
+import org.mindrot.jbcrypt.BCrypt;
+
 public class UserDatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "user.db";
-    private static final int DATABASE_VERSION = 3;
+    private static final int DATABASE_VERSION = 2;
     private static final String TABLE_NAME = "user";
     private static final String COLUMN_ID = "id";
     private static final String COLUMN_PASSWORD = "password";
@@ -31,38 +33,41 @@ public class UserDatabaseHelper extends SQLiteOpenHelper {
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME);
         onCreate(db);
+        Log.d("UserDatabaseHelper", "Database upgraded. Old passwords removed.");
     }
 
     public boolean insertPassword(String password) {
         if (isPasswordRegistered()) {
-            return false; // Password already registered
+            Log.d("UserDatabaseHelper", "Password already registered, cannot insert new password.");
+            return false;
         }
 
+        String hashedPassword = hashPassword(password);
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
-        values.put(COLUMN_PASSWORD, password);
-        db.insert(TABLE_NAME, null, values);
+        values.put(COLUMN_PASSWORD, hashedPassword);
+        long result = db.insert(TABLE_NAME, null, values);
         db.close();
-        return true;
+
+        if (result == -1) {
+            Log.d("UserDatabaseHelper", "Failed to insert password into database.");
+        } else {
+            Log.d("UserDatabaseHelper", "Password successfully inserted with ID: " + result);
+        }
+
+        return result != -1;
     }
 
     public boolean updatePassword(String newPassword) {
+        String hashedPassword = hashPassword(newPassword);
+
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
-        values.put(COLUMN_PASSWORD, newPassword);
+        values.put(COLUMN_PASSWORD, hashedPassword);
 
         int rowsAffected = db.update(TABLE_NAME, values, null, null);
         db.close();
         return rowsAffected > 0;
-    }
-
-    public boolean isPasswordRegistered() {
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.query(TABLE_NAME, new String[]{COLUMN_PASSWORD},
-                null, null, null, null, null);
-        boolean hasPassword = (cursor.getCount() > 0);
-        cursor.close();
-        return hasPassword;
     }
 
     public boolean verifyPassword(String password) {
@@ -71,23 +76,28 @@ public class UserDatabaseHelper extends SQLiteOpenHelper {
                 null, null, null, null, null);
         boolean isValid = false;
         if (cursor.moveToFirst()) {
-            String storedPassword = cursor.getString(0);
-            isValid = storedPassword.equals(password);
+            String storedHashedPassword = cursor.getString(0);
+            isValid = verifyPasswordHash(password, storedHashedPassword);
         }
         cursor.close();
         return isValid;
     }
 
-    public String getPassword() {
+    private String hashPassword(String password) {
+        return BCrypt.hashpw(password, BCrypt.gensalt(10));
+    }
+
+    private boolean verifyPasswordHash(String password, String hash) {
+        return BCrypt.checkpw(password, hash);
+    }
+
+    public boolean isPasswordRegistered() {
         SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.query(TABLE_NAME, new String[]{COLUMN_PASSWORD},
-                null, null, null, null, null);
-        String password = null;
-        if (cursor != null && cursor.moveToFirst()) {
-            password = cursor.getString(0);
-        }
+        Cursor cursor = db.query(TABLE_NAME, new String[]{COLUMN_PASSWORD}, null, null, null, null, null);
+        boolean hasPassword = (cursor.getCount() > 0);
         cursor.close();
-        return password;
+        Log.d("UserDatabaseHelper", "isPasswordRegistered: " + hasPassword);
+        return hasPassword;
     }
 
     public void logDatabaseContent() {
@@ -102,7 +112,7 @@ public class UserDatabaseHelper extends SQLiteOpenHelper {
                     if (idIndex != -1 && passwordIndex != -1) {
                         int id = cursor.getInt(idIndex);
                         String password = cursor.getString(passwordIndex);
-                        Log.d("DatabaseHelper", "ID: " + id + ", Password: " + password);
+                        Log.d("DatabaseHelper", "ID: " + id + ", Hashed Password: " + password);
                     } else {
                         Log.e("DatabaseHelper", "Column not found: " +
                                 (idIndex == -1 ? COLUMN_ID : COLUMN_PASSWORD));

@@ -11,7 +11,7 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 
-public class Hashing {
+public class Encryption {
 
     private static final String KEY_ALIAS = "otp_key";
     private static final String ANDROID_KEYSTORE = "AndroidKeyStore";

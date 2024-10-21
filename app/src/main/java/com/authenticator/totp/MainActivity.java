@@ -14,7 +14,7 @@ import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
 
-import com.authenticator.totp.db.Hashing;
+import com.authenticator.totp.db.Encryption;
 import com.authenticator.totp.db.UserDatabaseHelper;
 
 import java.util.concurrent.Executor;
@@ -51,7 +51,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (!isKeyGenerated) {
             try {
-                Hashing.generateKey();
+                Encryption.generateKey();
                 SharedPreferences.Editor editor = encryptionPrefs.edit();
                 editor.putBoolean(KEY_GENERATED, true);
                 editor.apply();

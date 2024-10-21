@@ -62,9 +62,9 @@ public class OtpDatabaseHelper extends SQLiteOpenHelper {
 
         try {
             //Encrypting sensitive information
-            String encryptedAccountName = Hashing.encrypt(otpInfo.accountName);
-            String encryptedIssuer = Hashing.encrypt(otpInfo.issuer);
-            String encryptedSecret = Hashing.encrypt(otpInfo.secret);
+            String encryptedAccountName = Encryption.encrypt(otpInfo.accountName);
+            String encryptedIssuer = Encryption.encrypt(otpInfo.issuer);
+            String encryptedSecret = Encryption.encrypt(otpInfo.secret);
 
             values.put(COLUMN_ACCOUNT_NAME, encryptedAccountName);
             values.put(COLUMN_ISSUER, encryptedIssuer);
@@ -107,11 +107,11 @@ public class OtpDatabaseHelper extends SQLiteOpenHelper {
 
                     if (idIndex != -1) otpInfo.setId(cursor.getInt(idIndex));
                     if (accountNameIndex != -1)
-                        otpInfo.setAccountName(Hashing.decrypt(cursor.getString(accountNameIndex)));
+                        otpInfo.setAccountName(Encryption.decrypt(cursor.getString(accountNameIndex)));
                     if (issuerIndex != -1)
-                        otpInfo.setIssuer(Hashing.decrypt(cursor.getString(issuerIndex)));
+                        otpInfo.setIssuer(Encryption.decrypt(cursor.getString(issuerIndex)));
                     if (secretIndex != -1)
-                        otpInfo.setSecret(Hashing.decrypt(cursor.getString(secretIndex)));
+                        otpInfo.setSecret(Encryption.decrypt(cursor.getString(secretIndex)));
                     if (otpLengthIndex != -1) otpInfo.setOtpLength(cursor.getInt(otpLengthIndex));
                     if (userTimeStepIndex != -1)
                         otpInfo.setUserTimeStep(cursor.getInt(userTimeStepIndex));
