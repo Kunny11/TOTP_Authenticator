@@ -85,8 +85,16 @@ public class ExportPage extends AppCompatActivity {
                 .setSingleChoiceItems(formats, -1, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
+                        if (formats[which].equals("JSON")) {
+                            encryptCheckbox.setEnabled(true);
+                            encryptCheckbox.setChecked(false);
+                        } else {
+                            encryptCheckbox.setEnabled(false);
+                            encryptCheckbox.setChecked(false);
+                        }
                     }
                 })
+
                 .setView(layout)
                 .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     @Override
@@ -95,7 +103,7 @@ public class ExportPage extends AppCompatActivity {
                         if (selectedPosition >= 0) {
                             shouldEncrypt = encryptCheckbox.isChecked();
                             String selectedFormat = formats[selectedPosition];
-                            if (shouldEncrypt) {
+                            if (shouldEncrypt && selectedFormat.equals("JSON")) {
                                 showPasswordDialog(selectedFormat);
                             } else {
                                 generateAndSaveFile(selectedFormat.toLowerCase(), null);
