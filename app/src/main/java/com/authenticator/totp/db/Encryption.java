@@ -15,7 +15,7 @@ public class Encryption {
 
     private static final String KEY_ALIAS = "otp_key";
     private static final String ANDROID_KEYSTORE = "AndroidKeyStore";
-    private static final String TRANSFORMATION = "AES/GCM/NoPadding";
+    private static final String ALGORITHM = "AES/GCM/NoPadding";
     private static final int GCM_TAG_LENGTH = 128;
 
     // Method for generating key and storing it in the Android Keystore
@@ -32,7 +32,7 @@ public class Encryption {
     //Encrypts data
     public static String encrypt(String data) throws Exception {
         SecretKey key = getSecretKey();
-        Cipher cipher = Cipher.getInstance(TRANSFORMATION);
+        Cipher cipher = Cipher.getInstance(ALGORITHM);
         cipher.init(Cipher.ENCRYPT_MODE, key);
         byte[] iv = cipher.getIV();
         byte[] cipherText = cipher.doFinal(data.getBytes(StandardCharsets.UTF_8));
@@ -52,7 +52,7 @@ public class Encryption {
         byte[] iv = new byte[12]; // GCM standard IV length is 12 bytes
         System.arraycopy(decodedData, 0, iv, 0, iv.length);
 
-        Cipher cipher = Cipher.getInstance(TRANSFORMATION);
+        Cipher cipher = Cipher.getInstance(ALGORITHM);
         GCMParameterSpec spec = new GCMParameterSpec(GCM_TAG_LENGTH, iv);
         cipher.init(Cipher.DECRYPT_MODE, key, spec);
 

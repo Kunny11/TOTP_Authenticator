@@ -171,7 +171,7 @@ public class ExportPage extends AppCompatActivity {
                 if (shouldEncrypt) {
                     try {
                         PassEncryp passEncryp = new PassEncryp();
-                        content = Base64.encodeToString(passEncryp.encryptContent(content, password), Base64.DEFAULT); // Encrypt the JSON content
+                        content = passEncryp.encryptContent(content, password);
 
                     } catch (Exception e) {
                         Log.e(TAG, "Encryption failed: " + e.getMessage(), e);

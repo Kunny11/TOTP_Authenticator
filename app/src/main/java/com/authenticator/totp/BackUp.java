@@ -96,7 +96,7 @@ public class BackUp extends AppCompatActivity {
         String encryptedContent = "";
         try {
             PassEncryp passEncryp = new PassEncryp();
-            encryptedContent = Base64.encodeToString(passEncryp.encryptContent(jsonContent, password), Base64.DEFAULT);
+            encryptedContent = passEncryp.encryptContent(jsonContent, password);
         } catch (Exception e) {
             Log.e(TAG, "Encryption failed: " + e.getMessage(), e);
             Toast.makeText(this, "Error encrypting backup", Toast.LENGTH_SHORT).show();
