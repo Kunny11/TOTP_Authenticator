@@ -16,7 +16,10 @@ import android.util.Log;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.Toast;
 
@@ -242,16 +245,66 @@ public class HomePage extends AppCompatActivity {
     private void showFormatSelectionDialog(List<OtpInfo> selectedOtpInfoList) {
         final String[] formats = {"TXT", "JSON", "HTML"};
 
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+
+        final CheckBox encryptCheckbox = new CheckBox(this);
+        encryptCheckbox.setText("Encrypt file");
+        layout.addView(encryptCheckbox);
+
         new AlertDialog.Builder(this)
                 .setTitle("Choose file format")
-                .setItems(formats, (dialog, which) -> {
-                    String format = formats[which].toLowerCase();
-                    generateAndSaveFile(selectedOtpInfoList, format);
+                .setSingleChoiceItems(formats, -1, (dialog, which) -> {
+                    if (formats[which].equals("JSON")) {
+                        encryptCheckbox.setEnabled(true);
+                        encryptCheckbox.setChecked(false);
+                    } else {
+                        encryptCheckbox.setEnabled(false);
+                        encryptCheckbox.setChecked(false);
+                    }
                 })
+                .setView(layout)
+                .setPositiveButton("OK", (dialog, which) -> {
+                    int selectedPosition = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
+                    if (selectedPosition >= 0) {
+                        String format = formats[selectedPosition].toLowerCase();
+                        boolean shouldEncrypt = encryptCheckbox.isChecked();
+
+                        if (shouldEncrypt && format.equals("json")) {
+                            showPasswordDialog(selectedOtpInfoList, format);
+                        } else {
+                            generateAndSaveFile(selectedOtpInfoList, format, null);
+                        }
+                    } else {
+                        Toast.makeText(this, "Please select a format", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
                 .show();
     }
 
-    private void generateAndSaveFile(List<OtpInfo> selectedOtpInfoList, String format) {
+    private void showPasswordDialog(List<OtpInfo> selectedOtpInfoList, String format) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Enter password");
+
+        final EditText input = new EditText(this);
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        builder.setView(input);
+
+        builder.setPositiveButton("OK", (dialog, which) -> {
+            String password = input.getText().toString();
+            if (!password.isEmpty()) {
+                generateAndSaveFile(selectedOtpInfoList, format, password);
+            } else {
+                Toast.makeText(this, "Password cannot be empty", Toast.LENGTH_SHORT).show();
+            }
+        });
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+
+        builder.show();
+    }
+
+    private void generateAndSaveFile(List<OtpInfo> selectedOtpInfoList, String format, String password) {
         if (selectedOtpInfoList == null || selectedOtpInfoList.isEmpty()) {
             Toast.makeText(this, "No OTP details to export", Toast.LENGTH_SHORT).show();
             return;
@@ -271,20 +324,26 @@ public class HomePage extends AppCompatActivity {
                 break;
 
             case "json":
-                List<SelectedAcc> otpInfoDTOList = new ArrayList<>();
-                for (OtpInfo otpInfo : selectedOtpInfoList) {
-                    otpInfoDTOList.add(new SelectedAcc(
-                            otpInfo.getAccountName(),
-                            otpInfo.getAlgorithm(),
-                            otpInfo.getIssuer(),
-                            otpInfo.getOtpLength(),
-                            otpInfo.getSecret(),
-                            otpInfo.getUserTimeStep()
-                    ));
-                }
-                content = gson.toJson(otpInfoDTOList);
-                break;
+                try {
+                    String otpJson = gson.toJson(selectedOtpInfoList);
 
+                    if (password != null) {
+                        // Encrypt JSON content
+                        PassEncryp passEncryp = new PassEncryp();
+                        String encryptedContent = passEncryp.encryptContent(otpJson, password);
+
+                        // Wrap encrypted content in JSON structure
+                        content = gson.toJson(new EncryptedJson(true, encryptedContent));
+                    } else {
+                        // Wrap unencrypted content in JSON structure
+                        content = gson.toJson(new EncryptedJson(false, otpJson));
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error preparing JSON content: " + e.getMessage(), e);
+                    Toast.makeText(this, "Error preparing JSON content", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                break;
 
             case "html":
                 StringBuilder htmlBuilder = new StringBuilder();
@@ -297,7 +356,6 @@ public class HomePage extends AppCompatActivity {
                             .append("Period: ").append(otpInfo.getUserTimeStep()).append("<br>")
                             .append("Digits: ").append(otpInfo.getOtpLength()).append("<br>")
                             .append("Algorithm: ").append(otpInfo.getAlgorithm()).append("<br>")
-                            .append("QR Code: <img src='").append(generateQrCode(otpInfo)).append("'><br>")
                             .append("</p>");
                 }
                 htmlBuilder.append("</body></html>");
@@ -353,6 +411,7 @@ public class HomePage extends AppCompatActivity {
                 return "text/plain";
         }
     }
+
 
     private String generateQrCode(OtpInfo otpInfo) {
         QRCodeWriter qrCodeWriter = new QRCodeWriter();
