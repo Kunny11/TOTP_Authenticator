@@ -6,9 +6,12 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.InputType;
+import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -52,6 +55,12 @@ public class ImportPage extends AppCompatActivity {
                 showFormatSelectionDialog();
             }
         });
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_READ_STORAGE);
+        } else {
+            showFormatSelectionDialog();
+        }
     }
 
     private void showFormatSelectionDialog() {
@@ -64,24 +73,18 @@ public class ImportPage extends AppCompatActivity {
                     public void onClick(DialogInterface dialog, int which) {
                         switch (which) {
                             case 0:
-                                if (ContextCompat.checkSelfPermission(ImportPage.this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-                                    openFilePicker("text/plain", PICK_TEXT_FILE);
-                                } else {
-                                    ActivityCompat.requestPermissions(ImportPage.this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_READ_STORAGE);
-                                }
+                                openFilePicker("text/plain", PICK_TEXT_FILE);
                                 break;
                             case 1:
-                                if (ContextCompat.checkSelfPermission(ImportPage.this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-                                    openFilePicker("application/json", PICK_JSON_FILE);
-                                } else {
-                                    ActivityCompat.requestPermissions(ImportPage.this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_READ_STORAGE);
-                                }
+                                openFilePicker("application/json", PICK_JSON_FILE);
                                 break;
                         }
                     }
                 })
                 .show();
     }
+
+
 
     private void openFilePicker(String mimeType, int requestCode) {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
@@ -198,112 +201,101 @@ public class ImportPage extends AppCompatActivity {
     private void parseJson(String json) {
         try {
             Object jsonObj = new JSONTokener(json).nextValue();
-            List<OtpInfo> otpInfos = new ArrayList<>();
 
             if (jsonObj instanceof JSONObject) {
-                parseJsonObject((JSONObject) jsonObj, otpInfos);
-            } else if (jsonObj instanceof JSONArray) {
-                parseJsonArray((JSONArray) jsonObj, otpInfos);
+                JSONObject jsonObject = (JSONObject) jsonObj;
+
+                if (jsonObject.has("encrypted") && jsonObject.getBoolean("encrypted")) {
+                    // Encrypted JSON
+                    showPasswordDialog(jsonObject);
+                } else if (jsonObject.has("content")) {
+                    // Unencrypted JSON
+                    String content = jsonObject.getString("content");
+                    parseContent(content);
+                } else {
+                    throw new IllegalArgumentException("Invalid JSON structure: Missing 'content' field.");
+                }
+            } else {
+                throw new IllegalArgumentException("Invalid JSON format: Root must be a JSONObject.");
             }
-
-            OtpDatabaseHelper dbHelper = new OtpDatabaseHelper(this);
-            for (OtpInfo otpInfo : otpInfos) {
-                Log.d(TAG, "Adding OTP Info to DB: " + otpInfo.toString());
-                dbHelper.addOtpInfo(otpInfo);
-            }
-
-            Toast.makeText(this, "OTP imported successfully", Toast.LENGTH_SHORT).show();
-
-            Intent intent = new Intent(ImportPage.this, HomePage.class);
-            startActivity(intent);
-            finish();
         } catch (Exception e) {
             Log.e(TAG, "Error parsing JSON file: " + e.getMessage(), e);
             Toast.makeText(this, "Error parsing JSON file: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
-    private void parseJsonObject(JSONObject jsonObject, List<OtpInfo> otpInfos) {
-        try {
-            if (jsonObject.has("db")) {
-                JSONObject dbObject = jsonObject.getJSONObject("db");
-                JSONArray entriesArray = dbObject.getJSONArray("entries");
-                parseJsonArray(entriesArray, otpInfos);
-            } else if (jsonObject.has("accountName")) {
-                String accountName = jsonObject.optString("accountName", "");
-                String issuer = jsonObject.optString("issuer", "");
-                String secret = jsonObject.optString("secret", "");
-                int otpLength = jsonObject.optInt("otpLength", 6);
-                int userTimeStep = jsonObject.optInt("userTimeStep", 30);
-                String algorithm = jsonObject.optString("algorithm", "HmacSHA1");
+    private void showPasswordDialog(JSONObject encryptedJsonObject) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Enter Password");
 
-                Log.d("kk", "Parsed OTP Info - Account Name: " + accountName + ", Issuer: " + issuer +
+        final EditText passwordInput = new EditText(this);
+        passwordInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        builder.setView(passwordInput);
+
+        builder.setPositiveButton("OK", (dialog, which) -> {
+            String password = passwordInput.getText().toString();
+            try {
+                String encryptedContent = encryptedJsonObject.getString("content");
+                byte[] encryptedData = Base64.decode(encryptedContent, Base64.DEFAULT);
+                String decryptedContent = PassEncryp.decryptContent(encryptedData, password);
+                parseContent(decryptedContent);
+            } catch (Exception e) {
+                Log.e(TAG, "Error decrypting content: " + e.getMessage(), e);
+                Toast.makeText(ImportPage.this, "Error decrypting file: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+        builder.show();
+    }
+
+
+    private void parseContent(String content) {
+        try {
+            Object contentObj = new JSONTokener(content).nextValue();
+
+            if (contentObj instanceof JSONArray) {
+                JSONArray entriesArray = (JSONArray) contentObj;
+                List<OtpInfo> otpInfos = new ArrayList<>();
+                parseJsonArray(entriesArray, otpInfos);
+            } else {
+                throw new IllegalArgumentException("Invalid content structure: Expected a JSON array.");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error parsing content: " + e.getMessage(), e);
+            Toast.makeText(this, "Error parsing content: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+
+    private void parseJsonArray(JSONArray jsonArray, List<OtpInfo> otpInfos) {
+        try {
+            for (int i = 0; i < jsonArray.length(); i++) {
+                JSONObject entryObject = jsonArray.getJSONObject(i);
+
+                String accountName = entryObject.optString("accountName", "");
+                String issuer = entryObject.optString("issuer", "");
+                String secret = entryObject.optString("secret", "");
+                int otpLength = entryObject.optInt("otpLength", 6);
+                int userTimeStep = entryObject.optInt("userTimeStep", 30);
+                String algorithm = entryObject.optString("algorithm", "HmacSHA1");
+
+                algorithm = translateAlgorithm(algorithm);
+
+                Log.d(TAG, "Parsed OTP Info - Account Name: " + accountName + ", Issuer: " + issuer +
                         ", Secret: " + secret + ", Algorithm: " + algorithm + ", Digits: " + otpLength +
                         ", Period: " + userTimeStep);
 
                 OtpInfo otpInfo = new OtpInfo(accountName, issuer, secret, otpLength, userTimeStep, algorithm);
                 otpInfos.add(otpInfo);
-            } else {
-                parseFallback(jsonObject, otpInfos);
             }
-        } catch (Exception e) {
-            Log.e(TAG, "Error parsing JSON object: " + e.getMessage(), e);
-        }
-    }
-
-    private void parseJsonArray(JSONArray jsonArray, List<OtpInfo> otpInfos) {
-        try {
-            for (int i = 0; i < jsonArray.length(); i++) {
-                Object value = jsonArray.get(i);
-                if (value instanceof JSONObject) {
-                    JSONObject entryObject = (JSONObject) value;
-                    String accountName = entryObject.optString("name", "");
-                    String issuer = entryObject.optString("issuer", "");
-
-                    JSONObject infoObject = entryObject.getJSONObject("info");
-                    String secret = infoObject.optString("secret", "");
-                    int otpLength = infoObject.optInt("digits", 6);
-                    int userTimeStep = infoObject.optInt("period", 30);
-                    String algorithm = infoObject.optString("algo", "SHA1");
-
-                    algorithm = translateAlgorithm(algorithm);
-
-                    Log.d(TAG, "Parsed OTP Info - Account Name: " + accountName + ", Issuer: " + issuer +
-                            ", Secret: " + secret + ", Algorithm: " + algorithm + ", Digits: " + otpLength +
-                            ", Period: " + userTimeStep);
-
-                    OtpInfo otpInfo = new OtpInfo(accountName, issuer, secret, otpLength, userTimeStep, algorithm);
-                    otpInfos.add(otpInfo);
-                } else if (value instanceof JSONArray) {
-                    parseJsonArray((JSONArray) value, otpInfos);
-                }
-            }
+            saveToDatabase(otpInfos);
         } catch (Exception e) {
             Log.e(TAG, "Error parsing JSON array: " + e.getMessage(), e);
+            Toast.makeText(this, "Error parsing JSON array: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
-    private void parseFallback(JSONObject jsonObject, List<OtpInfo> otpInfos) {
-        try {
-            String accountName = jsonObject.optString("accountName", jsonObject.optString("name", ""));
-            String issuer = jsonObject.optString("issuer", "");
-            String secret = jsonObject.optString("secret", "");
-            int otpLength = jsonObject.optInt("otpLength", jsonObject.optInt("digits", 6));
-            int userTimeStep = jsonObject.optInt("userTimeStep", jsonObject.optInt("period", 30));
-            String algorithm = jsonObject.optString("algorithm", jsonObject.optString("algo", "SHA1"));
-
-            algorithm = translateAlgorithm(algorithm);
-
-            Log.d(TAG, "Parsed OTP Info - Account Name: " + accountName + ", Issuer: " + issuer +
-                    ", Secret: " + secret + ", Algorithm: " + algorithm + ", Digits: " + otpLength +
-                    ", Period: " + userTimeStep);
-
-            OtpInfo otpInfo = new OtpInfo(accountName, issuer, secret, otpLength, userTimeStep, algorithm);
-            otpInfos.add(otpInfo);
-        } catch (Exception e) {
-            Log.e(TAG, "Error parsing fallback JSON object: " + e.getMessage(), e);
-        }
-    }
 
     private String translateAlgorithm(String algorithm) {
         switch (algorithm) {
@@ -318,16 +310,30 @@ public class ImportPage extends AppCompatActivity {
         }
     }
 
+    private void saveToDatabase(List<OtpInfo> otpInfos) {
+        OtpDatabaseHelper dbHelper = new OtpDatabaseHelper(this);
+        for (OtpInfo otpInfo : otpInfos) {
+            dbHelper.addOtpInfo(otpInfo);
+        }
+        Toast.makeText(this, "OTP Accounts Imported Successfully", Toast.LENGTH_SHORT).show();
+
+        Intent intent = new Intent(ImportPage.this, HomePage.class);
+        startActivity(intent);
+        finish();
+    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == REQUEST_READ_STORAGE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Open the file picker once permission is granted
                 showFormatSelectionDialog();
             } else {
                 Toast.makeText(this, "Storage permission is required to import the file", Toast.LENGTH_SHORT).show();
             }
+        } else {
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
+
 }

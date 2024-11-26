@@ -167,17 +167,25 @@ public class ExportPage extends AppCompatActivity {
                 break;
 
             case "json":
-                content = gson.toJson(otpInfoList);
-                if (shouldEncrypt) {
-                    try {
-                        PassEncryp passEncryp = new PassEncryp();
-                        content = passEncryp.encryptContent(content, password);
+                try {
+                    // Convert OTP list to JSON string
+                    String otpJson = gson.toJson(otpInfoList);
 
-                    } catch (Exception e) {
-                        Log.e(TAG, "Encryption failed: " + e.getMessage(), e);
-                        Toast.makeText(this, "Error encrypting file", Toast.LENGTH_SHORT).show();
-                        return;
+                    if (shouldEncrypt) {
+                        // Encrypt content if needed
+                        PassEncryp passEncryp = new PassEncryp();
+                        String encryptedContent = passEncryp.encryptContent(otpJson, password);
+
+                        // Wrap encrypted content in the required JSON structure
+                        content = gson.toJson(new EncryptedJson(true, encryptedContent));
+                    } else {
+                        // Wrap unencrypted content in the required JSON structure
+                        content = gson.toJson(new EncryptedJson(false, otpJson));
                     }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error preparing JSON content: " + e.getMessage(), e);
+                    Toast.makeText(this, "Error preparing JSON content", Toast.LENGTH_SHORT).show();
+                    return;
                 }
                 break;
 

@@ -26,8 +26,8 @@ public class PassEncryp {
     private static final int TAG_LENGTH = 128;
 
     // Key Deriving Method
-    public static SecretKey deriveKeyFromPassword(String password, byte[] salt, int iterations) throws GeneralSecurityException {
-        PBEKeySpec spec = new PBEKeySpec(password.toCharArray(), salt, iterations, KEY_LENGTH);
+    public static SecretKey deriveKeyFromPassword(String password, byte[] salt) throws GeneralSecurityException {
+        PBEKeySpec spec = new PBEKeySpec(password.toCharArray(), salt, ITERATION_COUNT, KEY_LENGTH);
         SecretKeyFactory factory = SecretKeyFactory.getInstance(ALGORITHM);
         byte[] keyBytes = factory.generateSecret(spec).getEncoded();
         return new SecretKeySpec(keyBytes, "AES");
@@ -37,7 +37,7 @@ public class PassEncryp {
     public static String encryptContent(String content, String password) throws GeneralSecurityException {
         byte[] salt = generateSaltBytes();
 
-        SecretKey secretKey = deriveKeyFromPassword(password, salt, ITERATION_COUNT);
+        SecretKey secretKey = deriveKeyFromPassword(password, salt);
 
         byte[] iv = new byte[IV_LENGTH];
         SecureRandom random = new SecureRandom();
@@ -49,12 +49,11 @@ public class PassEncryp {
 
         byte[] encryptedBytes = cipher.doFinal(content.getBytes(StandardCharsets.UTF_8));
 
-        byte[] encryptedContent = new byte[SALT_LENGTH + 4 + IV_LENGTH + encryptedBytes.length];
+        byte[] encryptedContent = new byte[SALT_LENGTH + IV_LENGTH + encryptedBytes.length];
 
         System.arraycopy(salt, 0, encryptedContent, 0, SALT_LENGTH);
-        System.arraycopy(intToByteArray(ITERATION_COUNT), 0, encryptedContent, SALT_LENGTH, 4);
-        System.arraycopy(iv, 0, encryptedContent, SALT_LENGTH + 4, IV_LENGTH);
-        System.arraycopy(encryptedBytes, 0, encryptedContent, SALT_LENGTH + 4 + IV_LENGTH, encryptedBytes.length);
+        System.arraycopy(iv, 0, encryptedContent, SALT_LENGTH, IV_LENGTH);
+        System.arraycopy(encryptedBytes, 0, encryptedContent, SALT_LENGTH + IV_LENGTH, encryptedBytes.length);
 
         return Base64.encodeToString(encryptedContent, Base64.DEFAULT);
     }
@@ -64,17 +63,13 @@ public class PassEncryp {
         byte[] salt = new byte[SALT_LENGTH];
         System.arraycopy(encryptedContent, 0, salt, 0, SALT_LENGTH);
 
-        byte[] iterationBytes = new byte[4];
-        System.arraycopy(encryptedContent, SALT_LENGTH, iterationBytes, 0, 4);
-        int iterations = byteArrayToInt(iterationBytes);
-
         byte[] iv = new byte[IV_LENGTH];
-        System.arraycopy(encryptedContent, SALT_LENGTH + 4, iv, 0, IV_LENGTH);
+        System.arraycopy(encryptedContent, SALT_LENGTH, iv, 0, IV_LENGTH);
 
-        byte[] cipherText = new byte[encryptedContent.length - SALT_LENGTH - 4 - IV_LENGTH];
-        System.arraycopy(encryptedContent, SALT_LENGTH + 4 + IV_LENGTH, cipherText, 0, cipherText.length);
+        byte[] cipherText = new byte[encryptedContent.length - SALT_LENGTH - IV_LENGTH];
+        System.arraycopy(encryptedContent, SALT_LENGTH + IV_LENGTH, cipherText, 0, cipherText.length);
 
-        SecretKey secretKey = deriveKeyFromPassword(password, salt, iterations);
+        SecretKey secretKey = deriveKeyFromPassword(password, salt);
 
         Cipher cipher = Cipher.getInstance(AES_ALGORITHM);
         GCMParameterSpec gcmSpec = new GCMParameterSpec(TAG_LENGTH, iv);
@@ -90,23 +85,5 @@ public class PassEncryp {
         byte[] salt = new byte[SALT_LENGTH];
         new SecureRandom().nextBytes(salt);
         return salt;
-    }
-
-    // Method to convert int to byte array (for storing iteration count)
-    private static byte[] intToByteArray(int value) {
-        return new byte[] {
-                (byte)(value >> 24),
-                (byte)(value >> 16),
-                (byte)(value >> 8),
-                (byte)value
-        };
-    }
-
-    // Method to convert byte array to int (for reading iteration count)
-    private static int byteArrayToInt(byte[] bytes) {
-        return   bytes[0] << 24
-                | (bytes[1] & 0xFF) << 16
-                | (bytes[2] & 0xFF) << 8
-                | (bytes[3] & 0xFF);
     }
 }

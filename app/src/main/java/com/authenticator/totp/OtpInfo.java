@@ -1,5 +1,3 @@
-// OtpInfo.java
-
 package com.authenticator.totp;
 
 public class OtpInfo {
