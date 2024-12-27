@@ -1,7 +1,15 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Base application theme for dark mode -->
     <style name="Base.Theme.Totp" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+        <!-- Customize your dark theme here -->
+        <item name="colorPrimary">@color/orange</item>
+        <item name="colorPrimaryVariant">@color/orange</item>
+        <item name="colorOnPrimary">@color/holo_blue_dark</item>
+        <item name="colorSecondary">@color/holo_blue_dark</item>
+        <!-- Add other theme customization here -->
     </style>
+
+    <style name="Theme.Totp" parent="Base.Theme.Totp" />
+
 </resources>

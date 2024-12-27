@@ -23,14 +23,16 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Register Password"
-        android:textColor="@android:color/holo_blue_light"
+        android:textSize="16dp"
+        android:textColor="@android:color/holo_blue_dark"
         android:paddingTop="16dp"/>
 
     <TextView
         android:id="@+id/biometrics"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Use Biometrics"
-        android:textColor="@android:color/holo_blue_light"
-        android:paddingTop="16dp"/>
+        android:text="Use Biometrics..?"
+        android:textSize="16dp"
+        android:textColor="@android:color/holo_blue_dark"
+        android:paddingTop="10dp"/>
 </LinearLayout>

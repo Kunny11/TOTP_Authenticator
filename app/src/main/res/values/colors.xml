@@ -2,4 +2,14 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="orange">#FF5722</color>
+    <color name="holo_blue_bright">#ff00ddff</color>
+    <color name="holo_blue_dark">#ff0099cc</color>
+    <color name="holo_blue_light">#ff33b5e5</color>
+    <color name="dark_secondary">#03DAC6</color>
+    <color name="purple">#800080</color>
+    <color name="colorPrimary">#FF5722</color>  <!-- Set your desired primary color -->
+    <color name="colorPrimaryDark">#FF5722</color>  <!-- Darker shade for the primary color -->
+    <color name="colorAccent">#FF5722</color>  <!-- Accent color -->
+    <color name="colorPrimaryText">#FF5722</color>  <!-- Primary text color -->
 </resources>

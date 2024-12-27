@@ -4,20 +4,53 @@
     android:orientation="vertical"
     android:padding="16dp">
 
-    <EditText
-        android:id="@+id/new_Pass"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Enter new password"
-        android:inputType="textPassword" />
+        android:orientation="horizontal"
+        android:layout_marginBottom="16dp">
 
-    <EditText
-        android:id="@+id/confirmNewPass"
+        <EditText
+            android:id="@+id/new_Pass"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="Password"
+            android:inputType="textPassword" />
+
+        <ImageView
+            android:id="@+id/ivTogglePassword"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/eyeclose"
+            android:contentDescription="Toggle Password Visibility"
+            android:padding="8dp" />
+    </LinearLayout>
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Confirm new password"
-        android:inputType="textPassword" />
+        android:orientation="horizontal"
+        android:layout_marginBottom="16dp">
 
+        <EditText
+            android:id="@+id/confirmNewPass"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="Confirm Password"
+            android:inputType="textPassword" />
+
+        <ImageView
+            android:id="@+id/ivToggleConfirmPassword"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/eyeclose"
+            android:contentDescription="Toggle Confirm Password Visibility"
+            android:padding="8dp" />
+    </LinearLayout>
+
+    <!-- Change Password Button -->
     <Button
         android:id="@+id/buttonChangePassword"
         android:layout_width="match_parent"

@@ -1,8 +1,11 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+    <!-- Base application theme -->
     <style name="Base.Theme.Totp" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <!-- Customize your light theme here -->
+        <item name="colorPrimary">@color/colorPrimary</item>  <!-- Set primary color -->
+        <item name="colorPrimaryVariant">@color/colorPrimaryDark</item>  <!-- Set primary dark color -->
+        <item name="colorOnPrimary">@color/holo_blue_dark</item>  <!-- Set accent color -->
+        <item name="colorSecondary">@color/holo_blue_dark</item> <!-- Set primary text color -->
     </style>
 
     <style name="Theme.Totp" parent="Base.Theme.Totp" />

@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="10dp">
 
     <TextView
         android:id="@+id/account_name"
@@ -17,12 +17,24 @@
         android:id="@+id/issuer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Issuer" />
+        android:text="Issuer"
+        android:textSize="16sp"
+        android:textColor="@color/holo_blue_dark"/>
 
     <TextView
         android:id="@+id/otp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="OTP" />
+        android:text="OTP"
+        android:textSize="40sp"
+        android:textStyle="bold" />
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="3dp"
+        android:background="@color/orange"
+        android:layout_marginBottom="0dp"/>
 
 </LinearLayout>
