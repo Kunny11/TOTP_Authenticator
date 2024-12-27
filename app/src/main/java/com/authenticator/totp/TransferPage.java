@@ -10,11 +10,11 @@ import android.widget.Toast;
 import android.net.Uri;
 
 import androidx.appcompat.app.AppCompatActivity;
-import org.apache.commons.codec.binary.Base32;
 
-import com.google.authenticator.migration.MigrationPayloadWrapper.MigrationPayload;
 import com.authenticator.totp.db.OtpDatabaseHelper;
+import com.google.authenticator.migration.MigrationPayloadWrapper.MigrationPayload;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.EncodeHintType;
 import com.google.zxing.WriterException;
@@ -22,7 +22,6 @@ import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,87 +44,63 @@ public class TransferPage extends AppCompatActivity {
             return;
         }
 
-        Log.d("infocheck", "OTP Info List: " + otpInfoList);
-
         String qrContent = generateMigrationQrContent(otpInfoList);
-        Log.d("qr", "Generated QR Content: " + qrContent);
         if (qrContent.isEmpty()) {
             Toast.makeText(this, "Error generating QR code content", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        Log.d("qr", "Generated QR Content: " + qrContent);
-
         ImageView qrCodeImageView = findViewById(R.id.qr_code_image);
         try {
+            int qrCodeSize = Math.max(300, Math.min(900, qrContent.length() * 10)); // Dynamically set size
             Map<EncodeHintType, Object> hints = new HashMap<>();
-            hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.L);
+            hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.M); // Medium error correction
 
-            BitMatrix bitMatrix = new QRCodeWriter().encode(qrContent, BarcodeFormat.QR_CODE, 900, 900);
+            BitMatrix bitMatrix = new QRCodeWriter().encode(qrContent, BarcodeFormat.QR_CODE, qrCodeSize, qrCodeSize, hints);
             qrCodeImageView.setImageBitmap(toBitmap(bitMatrix));
         } catch (WriterException e) {
-            Log.e("TAG", "Error generating QR code: " + e.getMessage(), e);
+            Log.e(TAG, "Error generating QR code: " + e.getMessage(), e);
             Toast.makeText(this, "Error generating QR code", Toast.LENGTH_SHORT).show();
         }
     }
 
     private String generateMigrationQrContent(List<OtpInfo> otpInfoList) {
         MigrationPayload.Builder migrationBuilder = MigrationPayload.newBuilder();
-        Base32 base32 = new Base32();
 
         for (OtpInfo otpInfo : otpInfoList) {
             MigrationPayload.OTPParameters.Builder otpParametersBuilder = MigrationPayload.OTPParameters.newBuilder();
 
-            Log.d(TAG, "Processing OTP Entry: " + otpInfo.toString());
-
             try {
-                MigrationPayload.OTPParameters.Algorithm algorithmEnum = getAlgorithmEnum(otpInfo.getAlgorithm());
-
+                String accountName = otpInfo.getAccountName();
+                String issuer = otpInfo.getIssuer();
                 String base32Secret = otpInfo.getSecret();
-                Log.d("sec", "Base32 Secret: " + base32Secret);
 
-                byte[] secretBytes = base32.decode(base32Secret);
-                Log.d("bytes", "Secret: " + ByteString.copyFrom(secretBytes));
+                if (accountName == null || issuer == null || base32Secret == null || base32Secret.isEmpty()) {
+                    Log.e(TAG, "Skipping invalid OTP entry: " + otpInfo);
+                    continue;
+                }
 
-                Log.d("name", "AccountName: " + otpInfo.getAccountName());
-                Log.d("issuer", "Issuer: " + otpInfo.getIssuer());
-                Log.d("alg", "Algorithm: " + algorithmEnum);
-                Log.d("digit", "Length: " + otpInfo.getOtpLength());
+                byte[] secretBytes = base32Decode(base32Secret);
 
-                otpParametersBuilder.setIssuer(otpInfo.getIssuer())
-                        .setAccountName(otpInfo.getAccountName())
+                otpParametersBuilder
+                        .setIssuer(issuer)
+                        .setAccountName(accountName)
                         .setSecret(ByteString.copyFrom(secretBytes))
-                        .setAlgorithm(algorithmEnum)
-                        .setDigits(getDigitCountEnum(otpInfo.getOtpLength()));
+                        .setAlgorithm(getAlgorithmEnum(otpInfo.getAlgorithm()))
+                        .setDigits(getDigitCountEnum(otpInfo.getOtpLength()))
+                        .setType(MigrationPayload.OTPParameters.OtpType.OTP_TYPE_TOTP)
+                        .setCounter(0);
 
                 migrationBuilder.addOtpParameters(otpParametersBuilder);
             } catch (Exception e) {
                 Log.e(TAG, "Error processing OTP for account: " + otpInfo.getAccountName(), e);
-                Toast.makeText(this, "Error processing OTP for " + otpInfo.getAccountName(), Toast.LENGTH_SHORT).show();
             }
         }
-
 
         MigrationPayload migrationPayload = migrationBuilder.build();
-        String encodedPayload = Base64.encodeToString(migrationPayload.toByteArray(),Base64.NO_WRAP);
+        String encodedPayload = Base64.encodeToString(migrationPayload.toByteArray(), Base64.NO_WRAP);
 
-        Log.d("Encoded", "Encoded Payload: " + encodedPayload);
-        Log.d("PayloadSize", "Encoded Payload Length: " + encodedPayload.length());
-
-        byte[] decodedPayload = Base64.decode(encodedPayload, Base64.NO_WRAP);
-        try {
-            MigrationPayload payload = MigrationPayload.parseFrom(decodedPayload);
-            for (MigrationPayload.OTPParameters otp : payload.getOtpParametersList()) {
-                Log.d("issue","Issuer: " + otp.getIssuer());
-                Log.d("accnam","Account Name: " + otp.getAccountName());
-                Log.d("see","Secret: " + otp.getSecret().toStringUtf8());
-                Log.d("algg","Algorithm: " + otp.getAlgorithm());
-                Log.d("dii","Digits: " + otp.getDigits());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
+        // Construct the URI
         Uri exportUri = new Uri.Builder()
                 .scheme("otpauth-migration")
                 .authority("offline")
@@ -149,6 +124,8 @@ public class TransferPage extends AppCompatActivity {
             case "HMACSHA512":
             case "SHA512":
                 return MigrationPayload.OTPParameters.Algorithm.ALGORITHM_SHA512;
+            case "MD5":
+                return MigrationPayload.OTPParameters.Algorithm.ALGORITHM_MD5;
             default:
                 Log.e(TAG, "Unsupported algorithm: " + algorithm);
                 throw new IllegalArgumentException("Unsupported algorithm: " + algorithm);
@@ -167,6 +144,18 @@ public class TransferPage extends AppCompatActivity {
         }
     }
 
+    private MigrationPayload.OTPParameters.OtpType getOtpTypeEnum(String type) {
+        switch (type.trim().toUpperCase()) {
+            case "TOTP":
+                return MigrationPayload.OTPParameters.OtpType.OTP_TYPE_TOTP;
+            case "HOTP":
+                return MigrationPayload.OTPParameters.OtpType.OTP_TYPE_HOTP;
+            default:
+                Log.e(TAG, "Unsupported OTP type: " + type);
+                throw new IllegalArgumentException("Unsupported OTP type: " + type);
+        }
+    }
+
     private Bitmap toBitmap(BitMatrix bitMatrix) {
         int width = bitMatrix.getWidth();
         int height = bitMatrix.getHeight();
@@ -177,5 +166,23 @@ public class TransferPage extends AppCompatActivity {
             }
         }
         return bmp;
+    }
+
+    private byte[] base32Decode(String base32Seed) {
+        String base32Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+        base32Seed = base32Seed.toUpperCase();
+        byte[] bytes = new byte[base32Seed.length() * 5 / 8];
+        int buffer = 0, next = 0, bitsLeft = 0;
+        for (char c : base32Seed.toCharArray()) {
+            int index = base32Chars.indexOf(c);
+            buffer <<= 5;
+            buffer |= index;
+            bitsLeft += 5;
+            if (bitsLeft >= 8) {
+                bytes[next++] = (byte) (buffer >> (bitsLeft - 8));
+                bitsLeft -= 8;
+            }
+        }
+        return bytes;
     }
 }

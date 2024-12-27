@@ -6,14 +6,28 @@ option java_package = "com.google.authenticator.migration";
 option java_outer_classname = "MigrationPayloadWrapper";
 
 message MigrationPayload {
-  repeated OTPParameters otp_parameters = 1;
+  repeated OTPParameters otp_parameters = 1; // List of OTP accounts
+  int32 version = 2; // Schema version
+  int32 batch_size = 3; // Number of items in the batch
+  optional int32 batch_index = 4; // Current batch index (optional)
+  int32 batch_id = 5; // Batch identifier
 
   message OTPParameters {
-    string issuer = 1;
-    string account_name = 2;
-    bytes secret = 3;
-    DigitCount digits = 4;
-    Algorithm algorithm = 5;
+    bytes secret = 1; // The OTP secret
+    string account_name = 2; // Account name
+    string issuer = 3; // Issuer name (e.g., Google, GitHub)
+    Algorithm algorithm = 4; // Hashing algorithm (e.g., SHA1)
+    DigitCount digits = 5; // Number of digits in OTP (6 or 8)
+    OtpType type = 6; // OTP type (TOTP or HOTP)
+    int64 counter = 7; // Counter for HOTP (only relevant if type = HOTP)
+
+    enum Algorithm {
+      ALGORITHM_UNSPECIFIED = 0;
+      ALGORITHM_SHA1 = 1;
+      ALGORITHM_SHA256 = 2;
+      ALGORITHM_SHA512 = 3;
+      ALGORITHM_MD5 = 4; // Optional: Add MD5 support if needed
+    }
 
     enum DigitCount {
       DIGIT_COUNT_UNSPECIFIED = 0;
@@ -21,11 +35,10 @@ message MigrationPayload {
       DIGIT_COUNT_EIGHT = 2;
     }
 
-    enum Algorithm {
-      ALGORITHM_UNSPECIFIED = 0;
-      ALGORITHM_SHA1 = 1;
-      ALGORITHM_SHA256 = 2;
-      ALGORITHM_SHA512 = 3;
+    enum OtpType {
+      OTP_TYPE_UNSPECIFIED = 0;
+      OTP_TYPE_HOTP = 1; // Counter-based OTP
+      OTP_TYPE_TOTP = 2; // Time-based OTP
     }
   }
 }

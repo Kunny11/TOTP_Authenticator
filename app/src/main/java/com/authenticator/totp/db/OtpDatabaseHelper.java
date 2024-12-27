@@ -86,6 +86,39 @@ public class OtpDatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
+    // Batch insert method
+    public void addOtpInfoBatch(List<OtpInfo> otpInfoList) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.beginTransaction();
+        try {
+            for (OtpInfo otpInfo : otpInfoList) {
+                ContentValues values = new ContentValues();
+                // Encrypting sensitive information
+                String encryptedAccountName = Encryption.encrypt(otpInfo.accountName);
+                String encryptedIssuer = Encryption.encrypt(otpInfo.issuer);
+                String encryptedSecret = Encryption.encrypt(otpInfo.secret);
+
+                values.put(COLUMN_ACCOUNT_NAME, encryptedAccountName);
+                values.put(COLUMN_ISSUER, encryptedIssuer);
+                values.put(COLUMN_SECRET, encryptedSecret);
+                values.put(COLUMN_OTP_LENGTH, otpInfo.otpLength);
+                values.put(COLUMN_USER_TIME_STEP, otpInfo.userTimeStep);
+                values.put(COLUMN_ALGORITHM, otpInfo.algorithm);
+
+                // Insert OTP info in the batch
+                db.insert(TABLE_NAME, null, values);
+            }
+            db.setTransactionSuccessful();
+            Log.d("batch_insert", "Batch insert successful");
+        } catch (Exception e) {
+            Log.e(TAG, "Error encrypting OTP info in batch: ", e);
+        } finally {
+            db.endTransaction();
+            db.close();
+        }
+    }
+
+
     public List<OtpInfo> getAllOtpInfo() {
         List<OtpInfo> otpInfoList = new ArrayList<>();
         String selectQuery = "SELECT * FROM " + TABLE_NAME;
