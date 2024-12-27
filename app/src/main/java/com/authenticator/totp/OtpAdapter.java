@@ -41,14 +41,16 @@ public class OtpAdapter extends RecyclerView.Adapter<OtpAdapter.ViewHolder> {
         holder.accountNameTextView.setText(otpInfo.getAccountName());
         holder.issuerTextView.setText(otpInfo.getIssuer());
         holder.otpTextView.setText(otpInfo.getGeneratedOTP());
-
-        Log.d("Adapter", "Binding data - Account Name: " + otpInfo.getAccountName() +
-                ", Issuer: " + otpInfo.getIssuer() + ", OTP: " + otpInfo.getGeneratedOTP());
     }
 
     @Override
     public int getItemCount() {
         return otpInfoList.size();
+    }
+
+    public void updateOtpList(List<OtpInfo> updatedOtpInfoList) {
+        this.otpInfoList = updatedOtpInfoList;
+        notifyDataSetChanged();
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
@@ -62,17 +64,14 @@ public class OtpAdapter extends RecyclerView.Adapter<OtpAdapter.ViewHolder> {
             issuerTextView = view.findViewById(R.id.issuer);
             otpTextView = view.findViewById(R.id.otp);
 
-            view.setOnLongClickListener(new View.OnLongClickListener() {
-                @Override
-                public boolean onLongClick(View v) {
-                    if (longClickListener != null) {
-                        int position = getAdapterPosition();
-                        if (position != RecyclerView.NO_POSITION) {
-                            longClickListener.onItemLongClick(position);
-                        }
+            view.setOnLongClickListener(v -> {
+                if (longClickListener != null) {
+                    int position = getAdapterPosition();
+                    if (position != RecyclerView.NO_POSITION) {
+                        longClickListener.onItemLongClick(position);
                     }
-                    return true;
                 }
+                return true;
             });
         }
     }

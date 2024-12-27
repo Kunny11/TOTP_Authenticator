@@ -12,6 +12,8 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.provider.MediaStore;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -57,11 +59,12 @@ public class HomePage extends AppCompatActivity {
     private static final int REQUEST_WRITE_STORAGE = 112;
 
     private List<OtpInfo> otpInfoList = new ArrayList<>();
-
     private List<OtpInfo> selectedOtpInfoList = new ArrayList<>();
     private Handler handler = new Handler();
     private OtpAdapter otpAdapter;
     private OtpDatabaseHelper otpDatabaseHelper;
+    private EditText searchBar;
+    private List<OtpInfo> filteredOtpInfoList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,6 +91,7 @@ public class HomePage extends AppCompatActivity {
             }
         });
 
+        searchBar = findViewById(R.id.search_bar);
         RecyclerView otpRecyclerView = findViewById(R.id.otp_recycler_view);
         otpRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         otpAdapter = new OtpAdapter(otpInfoList);
@@ -103,6 +107,21 @@ public class HomePage extends AppCompatActivity {
         // Loads OTP info from the database
         otpInfoList.addAll(otpDatabaseHelper.getAllOtpInfo());
         otpAdapter.notifyDataSetChanged();
+
+        // Set search listener
+        searchBar.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int start, int before, int count) {
+                filterOtpList(charSequence.toString());
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {}
+        });
+
 
         Intent intent = getIntent();
         String accountName = intent.getStringExtra("account_name");
@@ -135,6 +154,22 @@ public class HomePage extends AppCompatActivity {
         handler.post(updateOtpTask);
     }
 
+    private void filterOtpList(String query) {
+        if (query.isEmpty()) {
+            // When the query is empty, show all OTPs
+            otpAdapter.updateOtpList(otpInfoList);
+        } else {
+            List<OtpInfo> filteredOtpInfoList = new ArrayList<>();
+            for (OtpInfo otpInfo : otpInfoList) {
+                if (otpInfo.getAccountName().toLowerCase().contains(query.toLowerCase()) ||
+                        otpInfo.getIssuer().toLowerCase().contains(query.toLowerCase())) {
+                    filteredOtpInfoList.add(otpInfo);
+                }
+            }
+            otpAdapter.updateOtpList(filteredOtpInfoList);
+        }
+    }
+
     private void showDeleteConfirmationDialog(final int position) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Delete Account")
@@ -154,7 +189,6 @@ public class HomePage extends AppCompatActivity {
         otpInfoList.remove(position);
         otpAdapter.notifyItemRemoved(position);
     }
-
 
     private void showSettingsMenu(View view) {
         PopupMenu popupMenu = new PopupMenu(HomePage.this, view);
@@ -177,8 +211,6 @@ public class HomePage extends AppCompatActivity {
         });
         popupMenu.show();
     }
-
-
 
     private void showPopupMenu(View view) {
         PopupMenu popupMenu = new PopupMenu(HomePage.this, view);
@@ -223,7 +255,6 @@ public class HomePage extends AppCompatActivity {
                 .show();
     }
 
-
     private void exportSelectedAccounts(boolean[] checkedItems) {
         selectedOtpInfoList.clear();
 
@@ -240,7 +271,6 @@ public class HomePage extends AppCompatActivity {
 
         showFormatSelectionDialog(selectedOtpInfoList);
     }
-
 
     private void showFormatSelectionDialog(List<OtpInfo> selectedOtpInfoList) {
         final String[] formats = {"TXT", "JSON", "HTML"};
@@ -412,41 +442,6 @@ public class HomePage extends AppCompatActivity {
         }
     }
 
-
-    private String generateQrCode(OtpInfo otpInfo) {
-        QRCodeWriter qrCodeWriter = new QRCodeWriter();
-        String qrContent = String.format("otpauth://totp/%s:%s?secret=%s&issuer=%s",
-                otpInfo.getIssuer(), otpInfo.getAccountName(), otpInfo.getSecret(), otpInfo.getIssuer());
-
-        try {
-            BitMatrix bitMatrix = qrCodeWriter.encode(qrContent, BarcodeFormat.QR_CODE, 200, 200);
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            int width = bitMatrix.getWidth();
-            int height = bitMatrix.getHeight();
-            int[] pixels = new int[width * height];
-
-            // Converting BitMatrix to pixels array
-            for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++) {
-                    pixels[y * width + x] = bitMatrix.get(x, y) ? 0xFF000000 : 0xFFFFFFFF;
-                }
-            }
-
-            // Creating a Bitmap from pixels array
-            Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-            bitmap.setPixels(pixels, 0, width, 0, 0, width, height);
-
-            // Converting Bitmap to PNG
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
-
-            // Encode PNG to base64
-            return "data:image/png;base64," + android.util.Base64.encodeToString(byteArrayOutputStream.toByteArray(), android.util.Base64.NO_WRAP);
-        } catch (WriterException e) {
-            Log.e(TAG, "Error generating QR code: " + e.getMessage(), e);
-            return "";
-        }
-    }
-
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -459,9 +454,7 @@ public class HomePage extends AppCompatActivity {
         }
     }
 
-
     private void updateOtpInfo(String accountName, String issuer, String generatedOTP, String secret, boolean isManual, int otpLength, int userTimeStep, String algorithm) {
-        // Check for duplicates
         for (OtpInfo otpInfo : otpInfoList) {
             if (otpInfo.getAccountName().equals(accountName) && otpInfo.getIssuer().equals(issuer)) {
                 otpInfo.setGeneratedOTP(generatedOTP);
@@ -480,7 +473,6 @@ public class HomePage extends AppCompatActivity {
         otpDatabaseHelper.addOtpInfo(otpInfo);
         otpAdapter.notifyItemInserted(otpInfoList.size() - 1);
     }
-
 
     private final Runnable updateOtpTask = new Runnable() {
         @Override
