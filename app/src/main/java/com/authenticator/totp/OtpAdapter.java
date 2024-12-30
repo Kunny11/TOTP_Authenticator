@@ -48,10 +48,12 @@ public class OtpAdapter extends RecyclerView.Adapter<OtpAdapter.ViewHolder> {
         return otpInfoList.size();
     }
 
-    public void updateOtpList(List<OtpInfo> updatedOtpInfoList) {
-        this.otpInfoList = updatedOtpInfoList;
+    public void updateOtpList(List<OtpInfo> newOtpInfoList) {
+        this.otpInfoList.clear();
+        this.otpInfoList.addAll(newOtpInfoList);
         notifyDataSetChanged();
     }
+
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         public TextView accountNameTextView;

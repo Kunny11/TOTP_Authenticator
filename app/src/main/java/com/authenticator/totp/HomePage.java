@@ -154,6 +154,21 @@ public class HomePage extends AppCompatActivity {
         handler.post(updateOtpTask);
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadOtpAccounts();
+    }
+
+    private void loadOtpAccounts() {
+        otpInfoList.clear();
+        List<OtpInfo> retrievedOtpInfoList = otpDatabaseHelper.getAllOtpInfo();
+        Log.d(TAG, "Retrieved OTP Info List: " + retrievedOtpInfoList.toString());
+        otpInfoList.addAll(retrievedOtpInfoList);
+        otpAdapter.updateOtpList(otpInfoList);
+    }
+
+
     private void filterOtpList(String query) {
         if (query.isEmpty()) {
             // When the query is empty, show all OTPs
