@@ -4,8 +4,8 @@
         <!-- Customize your light theme here -->
         <item name="colorPrimary">@color/colorPrimary</item>  <!-- Set primary color -->
         <item name="colorPrimaryVariant">@color/colorPrimaryDark</item>  <!-- Set primary dark color -->
-        <item name="colorOnPrimary">@color/holo_blue_dark</item>  <!-- Set accent color -->
-        <item name="colorSecondary">@color/holo_blue_dark</item> <!-- Set primary text color -->
+        <item name="colorOnPrimary">@color/white</item>  <!-- Set accent color -->
+        <item name="colorSecondary">@color/white</item> <!-- Set primary text color -->
     </style>
 
     <style name="Theme.Totp" parent="Base.Theme.Totp" />

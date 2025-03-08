@@ -3,6 +3,7 @@ package com.authenticator.totp.db;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.util.Base64;
+import android.util.Log;
 
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
@@ -41,15 +42,34 @@ public class Encryption {
         System.arraycopy(iv, 0, encryptedData, 0, iv.length);
         System.arraycopy(cipherText, 0, encryptedData, iv.length, cipherText.length);
 
-        return Base64.encodeToString(encryptedData, Base64.DEFAULT);
+        String encryptedBase64 = Base64.encodeToString(encryptedData, Base64.DEFAULT);
+
+        // Log encryption output
+        Log.d("Encryption", "Generated IV: " + Base64.encodeToString(iv, Base64.DEFAULT));
+        Log.d("Encryption", "Generated CipherText: " + Base64.encodeToString(cipherText, Base64.DEFAULT));
+        Log.d("Encryption", "Final Encrypted Data: " + encryptedBase64);
+
+        return encryptedBase64;
     }
 
     //Decrypts data
     public static String decrypt(String encryptedData) throws Exception {
+        if (encryptedData == null || encryptedData.isEmpty()) {
+            throw new IllegalArgumentException("Encrypted data is null or empty");
+        }
+
+        // Debugging log
+        Log.d("checky","Encrypted Data: " + encryptedData);
+
         byte[] decodedData = Base64.decode(encryptedData, Base64.DEFAULT);
+
+        if (decodedData.length < 12) {
+            throw new IllegalArgumentException("Invalid encrypted data length");
+        }
+
         SecretKey key = getSecretKey();
 
-        byte[] iv = new byte[12]; // GCM standard IV length is 12 bytes
+        byte[] iv = new byte[12]; // GCM IV length
         System.arraycopy(decodedData, 0, iv, 0, iv.length);
 
         Cipher cipher = Cipher.getInstance(ALGORITHM);
@@ -59,8 +79,14 @@ public class Encryption {
         byte[] cipherText = new byte[decodedData.length - iv.length];
         System.arraycopy(decodedData, iv.length, cipherText, 0, cipherText.length);
 
+        Log.d("Decryption", "IV: " + Base64.encodeToString(iv, Base64.DEFAULT));
+        Log.d("Decryption", "CipherText: " + Base64.encodeToString(cipherText, Base64.DEFAULT));
+
         byte[] plainText = cipher.doFinal(cipherText);
-        return new String(plainText, StandardCharsets.UTF_8);
+        String decryptedText = new String(plainText, StandardCharsets.UTF_8);
+        Log.d("Decryption", "Decrypted Text: " + decryptedText);
+
+        return decryptedText;
     }
 
     // Retrieve the secret key from Keystore

@@ -94,19 +94,18 @@ public class HomePage extends AppCompatActivity {
         searchBar = findViewById(R.id.search_bar);
         RecyclerView otpRecyclerView = findViewById(R.id.otp_recycler_view);
         otpRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        otpAdapter = new OtpAdapter(otpInfoList);
+
+        //OTPs from Database FIRST
+        List<OtpInfo> otpList = otpDatabaseHelper.getAllOtpInfo();
+        Log.d("RecyclerView_Debug", "Fetched OTP List Size: " + otpList.size());
+
+        //Initialize Adapter with the correct OTP list
+        otpAdapter = new OtpAdapter(otpList);
         otpRecyclerView.setAdapter(otpAdapter);
 
-        otpAdapter.setOnOtpItemLongClickListener(new OtpAdapter.OnOtpItemLongClickListener() {
-            @Override
-            public void onItemLongClick(int position) {
-                showDeleteConfirmationDialog(position);
-            }
-        });
+        otpAdapter.updateOtpList(otpList);
 
-        // Loads OTP info from the database
-        otpInfoList.addAll(otpDatabaseHelper.getAllOtpInfo());
-        otpAdapter.notifyDataSetChanged();
+        otpAdapter.setOnOtpItemLongClickListener(position -> showDeleteConfirmationDialog(position));
 
         // Set search listener
         searchBar.addTextChangedListener(new TextWatcher() {
@@ -185,16 +184,20 @@ public class HomePage extends AppCompatActivity {
         }
     }
 
-    private void showDeleteConfirmationDialog(final int position) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Delete Account")
-                .setMessage("Are you sure you want to delete this account?")
-                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int which) {
-                        deleteAccount(position);
-                    }
+    private void showDeleteConfirmationDialog(int position) {
+        new AlertDialog.Builder(this)
+                .setTitle("Delete OTP")
+                .setMessage("Are you sure you want to delete this OTP?")
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    OtpInfo otpToDelete = otpInfoList.get(position);
+                    int otpId = otpToDelete.getId(); // Get the ID of the OTP
+
+                    Log.d("Delete", "Deleting OTP with ID: " + otpId);
+
+                    otpDatabaseHelper.deleteOtpInfo(otpId); // Delete from database
+                    otpAdapter.removeItem(position); // Update RecyclerView
                 })
-                .setNegativeButton("No", null)
+                .setNegativeButton("Cancel", null)
                 .show();
     }
 

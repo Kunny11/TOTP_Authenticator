@@ -34,6 +34,13 @@
         </LinearLayout>
     </LinearLayout>
 
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="0dp"
+        android:background="@color/white"
+        android:layout_marginBottom="0dp"/>
+
     <LinearLayout
         android:id="@+id/imp_page"
         android:layout_width="match_parent"
@@ -62,6 +69,13 @@
             android:textColor="#888888" />
             </LinearLayout>
     </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="3dp"
+        android:background="@color/white"
+        android:layout_marginBottom="0dp"/>
 
     <LinearLayout
         android:id="@+id/exp_page"
@@ -92,6 +106,13 @@
         </LinearLayout>
     </LinearLayout>
 
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="3dp"
+        android:background="@color/white"
+        android:layout_marginBottom="0dp"/>
+
     <LinearLayout
         android:id="@+id/qr_exp"
         android:layout_width="match_parent"
@@ -120,6 +141,13 @@
             android:textColor="#888888" />
         </LinearLayout>
     </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="3dp"
+        android:background="@color/white"
+        android:layout_marginBottom="0dp"/>
 
     <LinearLayout
         android:id="@+id/bio"
@@ -150,6 +178,13 @@
         </LinearLayout>
     </LinearLayout>
 
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="3dp"
+        android:background="@color/white"
+        android:layout_marginBottom="0dp"/>
+
     <LinearLayout
         android:id="@+id/backup"
         android:layout_width="match_parent"
@@ -178,5 +213,12 @@
                 android:textColor="#888888" />
         </LinearLayout>
     </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="3dp"
+        android:background="@color/white"
+        android:layout_marginBottom="0dp"/>
 
 </LinearLayout>

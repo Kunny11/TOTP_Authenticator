@@ -121,10 +121,26 @@ public class OtpDatabaseHelper extends SQLiteOpenHelper {
 
     public List<OtpInfo> getAllOtpInfo() {
         List<OtpInfo> otpInfoList = new ArrayList<>();
-        String selectQuery = "SELECT * FROM " + TABLE_NAME;
 
+        // Check the number of records in the database
+        String countQuery = "SELECT COUNT(*) FROM " + TABLE_NAME;
+        try (SQLiteDatabase db = this.getReadableDatabase();
+             Cursor countCursor = db.rawQuery(countQuery, null)) {
+
+            if (countCursor.moveToFirst()) {
+                int count = countCursor.getInt(0);
+                Log.d("DB_DEBUG", "Total Records in DB: " + count);
+            }
+        } catch (Exception e) {
+            Log.e("DB_ERROR", "Error checking record count: ", e);
+        }
+
+        // Now fetch OTP records from the database
+        String selectQuery = "SELECT * FROM " + TABLE_NAME;
         try (SQLiteDatabase db = this.getReadableDatabase();
              Cursor cursor = db.rawQuery(selectQuery, null)) {
+
+            Log.d("DB_DEBUG", "Fetching OTP Info...");
 
             if (cursor.moveToFirst()) {
                 do {
@@ -139,23 +155,35 @@ public class OtpDatabaseHelper extends SQLiteOpenHelper {
                     int algorithmIndex = cursor.getColumnIndex(COLUMN_ALGORITHM);
 
                     if (idIndex != -1) otpInfo.setId(cursor.getInt(idIndex));
-                    if (accountNameIndex != -1)
-                        otpInfo.setAccountName(Encryption.decrypt(cursor.getString(accountNameIndex)));
-                    if (issuerIndex != -1)
-                        otpInfo.setIssuer(Encryption.decrypt(cursor.getString(issuerIndex)));
-                    if (secretIndex != -1)
-                        otpInfo.setSecret(Encryption.decrypt(cursor.getString(secretIndex)));
+                    if (accountNameIndex != -1) {
+                        String encryptedName = cursor.getString(accountNameIndex);
+                        Log.d("DB_DEBUG", "Encrypted Account Name: " + encryptedName);
+                        try {
+                            String decryptedName = Encryption.decrypt(encryptedName);
+                            otpInfo.setAccountName(decryptedName);
+                            Log.d("DB_DEBUG", "Decrypted Account Name: " + decryptedName);
+                        } catch (Exception e) {
+                            Log.e("DB_ERROR", "Decryption failed for account name", e);
+                        }
+                    }
+                    if (issuerIndex != -1) {
+                        String decryptedIssuer = Encryption.decrypt(cursor.getString(issuerIndex));
+                        otpInfo.setIssuer(decryptedIssuer);
+                        Log.d("DB_DEBUG", "Decrypted Issuer: " + decryptedIssuer);
+                    }
+                    if (secretIndex != -1) otpInfo.setSecret(Encryption.decrypt(cursor.getString(secretIndex)));
                     if (otpLengthIndex != -1) otpInfo.setOtpLength(cursor.getInt(otpLengthIndex));
-                    if (userTimeStepIndex != -1)
-                        otpInfo.setUserTimeStep(cursor.getInt(userTimeStepIndex));
-                    if (algorithmIndex != -1)
-                        otpInfo.setAlgorithm(cursor.getString(algorithmIndex));
+                    if (userTimeStepIndex != -1) otpInfo.setUserTimeStep(cursor.getInt(userTimeStepIndex));
+                    if (algorithmIndex != -1) otpInfo.setAlgorithm(cursor.getString(algorithmIndex));
 
                     otpInfoList.add(otpInfo);
                 } while (cursor.moveToNext());
             }
+
+            Log.d("DB_DEBUG", "Total OTP entries fetched: " + otpInfoList.size());
+
         } catch (Exception e) {
-            Log.e(TAG, "Error fetching OTP info: ", e);
+            Log.e("DB_ERROR", "Error fetching OTP info: ", e);
         }
 
         return otpInfoList;
@@ -177,8 +205,16 @@ public class OtpDatabaseHelper extends SQLiteOpenHelper {
 
     public void deleteOtpInfo(int id) {
         SQLiteDatabase db = this.getWritableDatabase();
-        db.delete(TABLE_NAME, COLUMN_ID + " = ?", new String[]{String.valueOf(id)});
+        int deletedRows = db.delete(TABLE_NAME, COLUMN_ID + " = ?", new String[]{String.valueOf(id)});
         db.close();
+
+        if (deletedRows > 0) {
+            Log.d("Database", "Deleted OTP with ID: " + id);
+        } else {
+            Log.e("Database", "Failed to delete OTP with ID: " + id);
+        }
     }
+
+
 
 }
