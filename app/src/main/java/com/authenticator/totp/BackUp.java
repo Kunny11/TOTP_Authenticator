@@ -103,7 +103,8 @@ public class BackUp extends AppCompatActivity {
             return;
         }
 
-        saveBackupFile(encryptedContent);
+        String wrappedEncryptedJson = gson.toJson(new EncryptedJson(true, encryptedContent));
+        saveBackupFile(wrappedEncryptedJson);
     }
 
     private void saveBackupFile(String encryptedContent) {
