@@ -37,11 +37,11 @@ A secure TOTP (Time-based One-Time Password) Authenticator app that generates OT
 
 ## Screenshots
 <p float="left">
-<img src="screenshots/screenshot_1.png" width="300"/>
-<img src="screenshots/screenshot_2.png" width="300"/>
-<img src="screenshots/screenshot_0.png" width="300"/>
-<img src="screenshots/screenshot_3.png" width="300"/>
-<img src="screenshots/screenshot_4.png" width="300"/>
+<img src="screenshots/Screenshot_1.png" width="300"/>
+<img src="screenshots/Screenshot_2.png" width="300"/>
+<img src="screenshots/Screenshot_0.png" width="300"/>
+<img src="screenshots/Screenshot_3.png" width="300"/>
+<img src="screenshots/Screenshot_4.png" width="300"/>
 </p>
 
 ## Demo
