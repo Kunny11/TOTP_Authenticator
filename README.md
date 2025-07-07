@@ -25,6 +25,17 @@ A secure TOTP (Time-based One-Time Password) Authenticator app that generates OT
   - Encodes data into the `otpauth-migration://` URI format
  
 
+## Languages & Technologies Used
+
+- Java (Android Studio)
+- AES/GCM/NoPadding (Encryption)
+- PBKDF2 (Key Derivation)
+- Bcrypt (Password Hashing)
+- Protobuf (Multi-OTP QR Transfer)
+- XML (UI Layouts)
+- SQLite (Database)
+
+
 ## Demo
 
 [Application Demo] [https://drive.google.com/file/d/1AbCdEfGhIjKlMnOpQrSt/view?usp=sharing](https://drive.google.com/file/d/1A6Qs_pjDTWHTs3PLHnnfNTaf4ZslGvB2/view?usp=sharing)
